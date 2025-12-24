@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VARDAx Protected Website Example</title>
+    
+    <!-- VARDAx Protection SDK -->
+    <script src="vardax-sdk.js"></script>
+    <script>
+        // Initialize VARDAx Protection
+        VARDAx.init({
+            apiUrl: 'https://your-ngrok-url.ngrok.io', // Your local VARDAx exposed via ngrok
+            apiKey: 'your-api-key-here', // Optional API key
+            mode: 'monitor', // 'monitor' or 'protect'
+            debug: true // Enable console logging
+        });
+    </script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .shield {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .badge {
+            display: inline-block;
+            background: #10b981;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+        }
+        
+        .section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+        
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            transition: all 0.3s;
+        }
+        
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+        
+        button.danger {
+            background: #ef4444;
+        }
+        
+        button.danger:hover {
+            background: #dc2626;
+        }
+        
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .log {
+            background: #1f2937;
+            color: #10b981;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .log-entry {
+            margin-bottom: 5px;
+        }
+        
+        .info-box {
+            background: #f0f9ff;
+            border-left: 4px solid #3b82f6;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        
+        .info-box p {
+            color: #1e40af;
+            margin: 0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="shield">🛡️</div>
+            <h1>VARDAx Protected Website</h1>
+            <span class="badge">Protected by ML-Powered WAF</span>
+        </div>
+        
+        <div class="info-box">
+            <p><strong>ℹ️ Info:</strong> This website is protected by VARDAx. All requests are analyzed by ML in real-time.</p>
+        </div>
+        
+        <div class="section">
+            <h2>🧪 Test Protection</h2>
+            <p style="color: #666; margin-bottom: 15px;">
+                Click these buttons to test VARDAx protection. Check your VARDAx dashboard to see detections!
+            </p>
+            
+            <button onclick="testNormalRequest()">✅ Normal API Call</button>
+            <button onclick="testSQLInjection()" class="danger">⚠️ SQL Injection</button>
+            <button onclick="testXSS()" class="danger">⚠️ XSS Attack</button>
+            <button onclick="testPathTraversal()" class="danger">⚠️ Path Traversal</button>
+        </div>
+        
+        <div class="section">
+            <h2>📝 Test Form Submission</h2>
+            <form id="testForm" onsubmit="return handleFormSubmit(event)">
+                <input type="text" name="username" placeholder="Username" required>
+                <input type="email" name="email" placeholder="Email" required>
+                <textarea name="message" placeholder="Message" rows="3"></textarea>
+                <button type="submit">Submit Form</button>
+            </form>
+        </div>
+        
+        <div class="section">
+            <h2>📊 Activity Log</h2>
+            <div class="log" id="activityLog">
+                <div class="log-entry">🚀 VARDAx Protection Active</div>
+                <div class="log-entry">📡 Connected to VARDAx API</div>
+                <div class="log-entry">✓ Ready to protect</div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>ℹ️ How It Works</h2>
+            <ol style="color: #666; line-height: 1.8;">
+                <li>VARDAx SDK intercepts all requests from this page</li>
+                <li>Request features are sent to your local VARDAx (via ngrok)</li>
+                <li>ML analyzes the request in real-time (< 30ms)</li>
+                <li>If malicious, request is blocked (in protect mode)</li>
+                <li>All activity is logged in your VARDAx dashboard</li>
+            </ol>
+        </div>
+    </div>
+    
+    <script>
+        // Helper function to log activity
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('activityLog');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            const timestamp = new Date().toLocaleTimeString();
+            entry.textContent = `[${timestamp}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        // Test normal request
+        async function testNormalRequest() {
+            log('✅ Sending normal API request...');
+            try {
+                const response = await fetch('/api/users', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                log('✓ Normal request completed');
+            } catch (error) {
+                log('✓ Request sent to VARDAx for analysis');
+            }
+        }
+        
+        // Test SQL injection
+        async function testSQLInjection() {
+            log('⚠️ Sending SQL injection attempt...');
+            try {
+                const sqlPayload = encodeURIComponent("1' OR '1'='1");
+                const response = await fetch(`/api/users?id=${sqlPayload}`, {
+                    method: 'GET'
+                });
+                log('⚠️ SQL injection attempt sent');
+            } catch (error) {
+                log('⚠️ SQL injection sent to VARDAx');
+            }
+        }
+        
+        // Test XSS
+        async function testXSS() {
+            log('⚠️ Sending XSS attempt...');
+            try {
+                const xssPayload = encodeURIComponent('<' + 'script>alert("xss")<' + '/script>');
+                const response = await fetch(`/api/search?q=${xssPayload}`, {
+                    method: 'GET'
+                });
+                log('⚠️ XSS attempt sent');
+            } catch (error) {
+                log('⚠️ XSS sent to VARDAx');
+            }
+        }
+        
+        // Test path traversal
+        async function testPathTraversal() {
+            log('⚠️ Sending path traversal attempt...');
+            try {
+                const response = await fetch('/api/files/../../etc/passwd', {
+                    method: 'GET'
+                });
+                log('⚠️ Path traversal attempt sent');
+            } catch (error) {
+                log('⚠️ Path traversal sent to VARDAx');
+            }
+        }
+        
+        // Handle form submission
+        function handleFormSubmit(event) {
+            event.preventDefault();
+            log('📝 Form submitted - analyzing with VARDAx...');
+            
+            const formData = new FormData(event.target);
+            const data = Object.fromEntries(formData);
+            
+            fetch('/api/contact', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            }).then(() => {
+                log('✓ Form submission analyzed');
+            }).catch(() => {
+                log('✓ Form data sent to VARDAx');
+            });
+            
+            return false;
+        }
+        
+        // Log VARDAx status
+        setTimeout(() => {
+            const status = VARDAx.getStatus();
+            log(`📊 VARDAx Status: ${status.mode} mode`);
+            log(`🔗 API: ${status.apiUrl}`);
+        }, 1000);
+    </script>
+</body>
+</html>
