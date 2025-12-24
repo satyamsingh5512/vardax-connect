@@ -1,0 +1,98 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Gradient Definitions -->
+  <defs>
+    <linearGradient id="mainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#22d3ee;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#a78bfa;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ec4899;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="shieldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#6366f1;stop-opacity:1" />
+    </linearGradient>
+    
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  
+  <!-- Outer Ring -->
+  <circle cx="100" cy="100" r="90" stroke="url(#mainGradient)" stroke-width="2" fill="none" opacity="0.3"/>
+  <circle cx="100" cy="100" r="85" stroke="url(#mainGradient)" stroke-width="1" fill="none" opacity="0.2"/>
+  
+  <!-- Shield Base -->
+  <path d="M100 30 L140 50 L140 90 Q140 120 100 140 Q60 120 60 90 L60 50 Z" 
+        fill="url(#shieldGradient)" 
+        filter="url(#shadow)"
+        opacity="0.9"/>
+  
+  <!-- Shield Outline -->
+  <path d="M100 30 L140 50 L140 90 Q140 120 100 140 Q60 120 60 90 L60 50 Z" 
+        stroke="url(#mainGradient)" 
+        stroke-width="2" 
+        fill="none"
+        filter="url(#glow)"/>
+  
+  <!-- Neural Network Pattern -->
+  <!-- Top Node -->
+  <circle cx="100" cy="55" r="4" fill="#22d3ee" opacity="0.8"/>
+  
+  <!-- Middle Layer Nodes -->
+  <circle cx="80" cy="75" r="3" fill="#a78bfa" opacity="0.8"/>
+  <circle cx="100" cy="75" r="3" fill="#a78bfa" opacity="0.8"/>
+  <circle cx="120" cy="75" r="3" fill="#a78bfa" opacity="0.8"/>
+  
+  <!-- Bottom Layer Nodes -->
+  <circle cx="85" cy="95" r="3" fill="#ec4899" opacity="0.8"/>
+  <circle cx="100" cy="95" r="3" fill="#ec4899" opacity="0.8"/>
+  <circle cx="115" cy="95" r="3" fill="#ec4899" opacity="0.8"/>
+  
+  <!-- Output Node -->
+  <circle cx="100" cy="115" r="4" fill="#22d3ee" opacity="0.8"/>
+  
+  <!-- Connections -->
+  <line x1="100" y1="55" x2="80" y2="75" stroke="#22d3ee" stroke-width="1" opacity="0.4"/>
+  <line x1="100" y1="55" x2="100" y2="75" stroke="#22d3ee" stroke-width="1" opacity="0.4"/>
+  <line x1="100" y1="55" x2="120" y2="75" stroke="#22d3ee" stroke-width="1" opacity="0.4"/>
+  
+  <line x1="80" y1="75" x2="85" y2="95" stroke="#a78bfa" stroke-width="1" opacity="0.4"/>
+  <line x1="80" y1="75" x2="100" y2="95" stroke="#a78bfa" stroke-width="1" opacity="0.4"/>
+  <line x1="100" y1="75" x2="85" y2="95" stroke="#a78bfa" stroke-width="1" opacity="0.4"/>
+  <line x1="100" y1="75" x2="100" y2="95" stroke="#a78bfa" stroke-width="1" opacity="0.4"/>
+  <line x1="100" y1="75" x2="115" y2="95" stroke="#a78bfa" stroke-width="1" opacity="0.4"/>
+  <line x1="120" y1="75" x2="100" y2="95" stroke="#a78bfa" stroke-width="1" opacity="0.4"/>
+  <line x1="120" y1="75" x2="115" y2="95" stroke="#a78bfa" stroke-width="1" opacity="0.4"/>
+  
+  <line x1="85" y1="95" x2="100" y2="115" stroke="#ec4899" stroke-width="1" opacity="0.4"/>
+  <line x1="100" y1="95" x2="100" y2="115" stroke="#ec4899" stroke-width="1" opacity="0.4"/>
+  <line x1="115" y1="95" x2="100" y2="115" stroke="#ec4899" stroke-width="1" opacity="0.4"/>
+  
+  <!-- Checkmark -->
+  <path d="M85 105 L95 115 L115 85" 
+        stroke="#22d3ee" 
+        stroke-width="3" 
+        stroke-linecap="round" 
+        stroke-linejoin="round" 
+        fill="none"
+        filter="url(#glow)"/>
+  
+  <!-- Bottom Text -->
+  <text x="100" y="170" font-family="'Inter', sans-serif" font-size="24" font-weight="700" 
+        fill="url(#mainGradient)" text-anchor="middle" letter-spacing="2">
+    VARDAX
+  </text>
+  
+  <text x="100" y="185" font-family="'Inter', sans-serif" font-size="10" font-weight="500" 
+        fill="#94a3b8" text-anchor="middle" letter-spacing="1">
+    ML-POWERED SECURITY
+  </text>
+</svg>
