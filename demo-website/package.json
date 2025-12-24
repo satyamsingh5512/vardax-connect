@@ -1,0 +1,12 @@
+{
+  "name": "vardax-demo-target",
+  "version": "1.0.0",
+  "description": "Demo target website for VARDAx ML-powered WAF",
+  "scripts": {
+    "dev": "python -m http.server 3001",
+    "deploy": "vercel --prod"
+  },
+  "keywords": ["vardax", "waf", "security", "demo"],
+  "author": "Your Name",
+  "license": "MIT"
+}

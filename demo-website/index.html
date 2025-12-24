@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VARDAx Demo Target Website</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            color: white;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .status {
+            background: #f0f0f0;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.connected {
+            background: #10b981;
+        }
+
+        .status-indicator.disconnected {
+            background: #ef4444;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .config-section {
+            margin-bottom: 30px;
+        }
+
+        .config-section label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .config-section input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .config-section input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .config-section small {
+            display: block;
+            color: #999;
+            margin-top: 5px;
+            font-size: 12px;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-normal {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-normal:hover:not(:disabled) {
+            background: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-attack {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-attack:hover:not(:disabled) {
+            background: #dc2626;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-stop {
+            background: #f59e0b;
+            color: white;
+            grid-column: 1 / -1;
+        }
+
+        .btn-stop:hover:not(:disabled) {
+            background: #d97706;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(245, 158, 11, 0.3);
+        }
+
+        .stats {
+            background: #f9fafb;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .stats h3 {
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .stat-value {
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .log {
+            background: #1f2937;
+            color: #10b981;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+        }
+
+        .log-entry.error {
+            color: #ef4444;
+        }
+
+        .log-entry.warning {
+            color: #f59e0b;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #999;
+            font-size: 12px;
+        }
+
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🛡️</div>
+            <h1>VARDAx Demo Target</h1>
+            <p class="subtitle">Protected by ML-Powered WAF</p>
+        </div>
+
+        <div class="status">
+            <span class="status-indicator disconnected" id="statusIndicator"></span>
+            <span id="statusText">Not Connected</span>
+        </div>
+
+        <div class="config-section">
+            <label for="vardaxUrl">VARDAx Backend URL</label>
+            <input 
+                type="text" 
+                id="vardaxUrl" 
+                placeholder="http://your-ip:8000"
+                value="http://localhost:8000"
+            >
+            <small>Enter your local VARDAx URL (use ngrok for remote access)</small>
+        </div>
+
+        <div class="button-group">
+            <button class="btn-normal" id="normalBtn" onclick="sendNormalTraffic()">
+                <span>✅</span>
+                <span>Normal Request</span>
+            </button>
+            <button class="btn-attack" id="attackBtn" onclick="sendAttackTraffic()">
+                <span>⚠️</span>
+                <span>Attack Request</span>
+            </button>
+            <button class="btn-stop" id="stopBtn" onclick="stopTraffic()" disabled>
+                <span>🛑</span>
+                <span>Stop Traffic</span>
+            </button>
+        </div>
+
+        <div class="stats">
+            <h3>📊 Traffic Statistics</h3>
+            <div class="stat-row">
+                <span class="stat-label">Total Requests</span>
+                <span class="stat-value" id="totalRequests">0</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Normal Requests</span>
+                <span class="stat-value" id="normalRequests">0</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Attack Requests</span>
+                <span class="stat-value" id="attackRequests">0</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Errors</span>
+                <span class="stat-value" id="errorCount">0</span>
+            </div>
+        </div>
+
+        <div class="log" id="logContainer">
+            <div class="log-entry">🚀 Ready to send traffic...</div>
+        </div>
+
+        <div class="footer">
+            <p>Protected by <a href="https://github.com/yourusername/vardax" target="_blank">VARDAx</a></p>
+            <p>ML-Powered Web Application Firewall</p>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let stats = {
+            total: 0,
+            normal: 0,
+            attack: 0,
+            errors: 0
+        };
+        let isRunning = false;
+        let intervalId = null;
+
+        // Attack patterns
+        const attackPatterns = [
+            {
+                name: 'SQL Injection',
+                uri: "/api/users?id=1' OR '1'='1",
+                userAgent: 'sqlmap/1.7.2'
+            },
+            {
+                name: 'Path Traversal',
+                uri: '/api/files/../../../etc/passwd',
+                userAgent: 'curl/7.88.1'
+            },
+            {
+                name: 'Scanner',
+                uri: '/admin/config',
+                userAgent: 'nikto/2.1.6'
+            },
+            {
+                name: 'XSS Attempt',
+                uri: "/api/search?q=<script>alert('xss')</script>",
+                userAgent: 'python-requests/2.31.0'
+            },
+            {
+                name: 'Credential Stuffing',
+                uri: '/api/auth/login',
+                userAgent: 'Go-http-client/1.1'
+            }
+        ];
+
+        const normalEndpoints = [
+            '/api/users',
+            '/api/products',
+            '/api/orders',
+            '/api/cart',
+            '/api/search'
+        ];
+
+        // Generate request ID
+        function generateRequestId() {
+            return `demo-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+        }
+
+        // Generate random IP
+        function generateIP() {
+            return `${Math.floor(Math.random() * 223) + 1}.${Math.floor(Math.random() * 254) + 1}.${Math.floor(Math.random() * 254) + 1}.${Math.floor(Math.random() * 254) + 1}`;
+        }
+
+        // Log message
+        function log(message, type = 'info') {
+            const logContainer = document.getElementById('logContainer');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            const timestamp = new Date().toLocaleTimeString();
+            entry.textContent = `[${timestamp}] ${message}`;
+            logContainer.appendChild(entry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+
+            // Keep only last 50 entries
+            while (logContainer.children.length > 50) {
+                logContainer.removeChild(logContainer.firstChild);
+            }
+        }
+
+        // Update stats
+        function updateStats() {
+            document.getElementById('totalRequests').textContent = stats.total;
+            document.getElementById('normalRequests').textContent = stats.normal;
+            document.getElementById('attackRequests').textContent = stats.attack;
+            document.getElementById('errorCount').textContent = stats.errors;
+        }
+
+        // Update status
+        function updateStatus(connected) {
+            const indicator = document.getElementById('statusIndicator');
+            const text = document.getElementById('statusText');
+            
+            if (connected) {
+                indicator.className = 'status-indicator connected';
+                text.textContent = 'Connected to VARDAx';
+            } else {
+                indicator.className = 'status-indicator disconnected';
+                text.textContent = 'Not Connected';
+            }
+        }
+
+        // Send request to VARDAx
+        async function sendRequest(data, isAttack = false) {
+            const vardaxUrl = document.getElementById('vardaxUrl').value;
+            const url = `${vardaxUrl}/api/v1/traffic/ingest`;
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    stats.total++;
+                    if (isAttack) {
+                        stats.attack++;
+                        log(`⚠️ Attack sent: ${data.uri}`, 'warning');
+                    } else {
+                        stats.normal++;
+                        log(`✅ Normal request sent: ${data.uri}`);
+                    }
+                    updateStats();
+                    updateStatus(true);
+                    return true;
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                stats.errors++;
+                updateStats();
+                updateStatus(false);
+                log(`❌ Error: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        // Send normal traffic
+        async function sendNormalTraffic() {
+            const endpoint = normalEndpoints[Math.floor(Math.random() * normalEndpoints.length)];
+            
+            const data = {
+                request_id: generateRequestId(),
+                timestamp: new Date().toISOString(),
+                client_ip: generateIP(),
+                method: 'GET',
+                uri: endpoint,
+                user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0',
+                body_length: 0,
+                has_cookie: true,
+                query_string: 'page=1&limit=20'
+            };
+
+            await sendRequest(data, false);
+        }
+
+        // Send attack traffic
+        async function sendAttackTraffic() {
+            const attack = attackPatterns[Math.floor(Math.random() * attackPatterns.length)];
+            
+            const data = {
+                request_id: generateRequestId(),
+                timestamp: new Date().toISOString(),
+                client_ip: generateIP(),
+                method: attack.uri.includes('login') ? 'POST' : 'GET',
+                uri: attack.uri,
+                user_agent: attack.userAgent,
+                body_length: attack.uri.includes('login') ? 100 : 0,
+                has_cookie: false,
+                query_string: null
+            };
+
+            await sendRequest(data, true);
+        }
+
+        // Start continuous traffic
+        function startContinuousTraffic(attackRate = 0.3) {
+            if (isRunning) return;
+
+            isRunning = true;
+            document.getElementById('normalBtn').disabled = true;
+            document.getElementById('attackBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+
+            log('🚀 Starting continuous traffic...', 'info');
+
+            intervalId = setInterval(() => {
+                if (Math.random() < attackRate) {
+                    sendAttackTraffic();
+                } else {
+                    sendNormalTraffic();
+                }
+            }, 1000); // 1 request per second
+        }
+
+        // Stop traffic
+        function stopTraffic() {
+            if (!isRunning) return;
+
+            isRunning = false;
+            clearInterval(intervalId);
+            intervalId = null;
+
+            document.getElementById('normalBtn').disabled = false;
+            document.getElementById('attackBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+
+            log('🛑 Traffic stopped', 'info');
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'n' && !isRunning) {
+                sendNormalTraffic();
+            } else if (e.key === 'a' && !isRunning) {
+                sendAttackTraffic();
+            } else if (e.key === 's') {
+                if (isRunning) {
+                    stopTraffic();
+                } else {
+                    startContinuousTraffic();
+                }
+            }
+        });
+
+        // Auto-start on double-click
+        document.querySelector('.container').addEventListener('dblclick', () => {
+            if (!isRunning) {
+                startContinuousTraffic();
+            }
+        });
+
+        // Initial log
+        log('💡 Tip: Press N for normal, A for attack, S to start/stop', 'info');
+        log('💡 Double-click anywhere to start continuous traffic', 'info');
+    </script>
+</body>
+</html>

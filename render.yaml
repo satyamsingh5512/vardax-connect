@@ -1,0 +1,28 @@
+services:
+  # Backend API Service
+  - type: web
+    name: vardax-backend
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: VARDAX_DATABASE_URL
+        value: sqlite:///./vardax.db
+      - key: VARDAX_SESSION_WINDOW_SECONDS
+        value: 300
+      - key: VARDAX_RATE_WINDOW_SECONDS
+        value: 60
+      - key: VARDAX_ANOMALY_THRESHOLD
+        value: 0.7
+    healthCheckPath: /health
+    
+databases:
+  # Optional: PostgreSQL database (upgrade from free tier)
+  # - name: vardax-db
+  #   databaseName: vardax
+  #   user: vardax
+  #   plan: free
