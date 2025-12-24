@@ -1,0 +1,244 @@
+# VARDAx Production Docker Compose
+# Full production deployment with all security features
+
+version: '3.8'
+
+services:
+  # ========================================================================
+  # NGINX Edge Layer with ModSecurity + Lua
+  # ========================================================================
+  nginx:
+    image: openresty/openresty:alpine
+    container_name: vardax-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx-production.conf:/usr/local/openresty/nginx/conf/nginx.conf:ro
+      - ./nginx/lua:/etc/nginx/lua:ro
+      - ./nginx/modsecurity:/etc/modsecurity.d/custom:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - nginx-logs:/var/log/nginx
+    environment:
+      - VARDAX_ML_API=http://vardax-backend:8000/api/v1/ml/analyze
+      - VARDAX_API_KEY=${VARDAX_API_KEY:-change-me-in-production}
+    depends_on:
+      - backend
+      - vardax-backend
+    networks:
+      - vardax-edge
+      - vardax-internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ========================================================================
+  # Your Backend Application (Protected)
+  # ========================================================================
+  backend:
+    image: ${BACKEND_IMAGE:-your-app:latest}
+    container_name: vardax-protected-app
+    restart: unless-stopped
+    expose:
+      - "8000"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=redis://redis:6379
+    networks:
+      - vardax-internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ========================================================================
+  # VARDAx ML Backend (FastAPI)
+  # ========================================================================
+  vardax-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: vardax-ml-backend
+    restart: unless-stopped
+    expose:
+      - "8000"
+    environment:
+      - VARDAX_DATABASE_URL=postgresql://vardax:${POSTGRES_PASSWORD}@postgres:5432/vardax
+      - VARDAX_REDIS_URL=redis://redis:6379
+      - VARDAX_API_KEY=${VARDAX_API_KEY:-change-me-in-production}
+      - VARDAX_JWT_SECRET=${JWT_SECRET:-change-me-in-production}
+      - VARDAX_ANOMALY_THRESHOLD=${ANOMALY_THRESHOLD:-0.7}
+      - VARDAX_SESSION_WINDOW_SECONDS=300
+      - VARDAX_RATE_WINDOW_SECONDS=60
+    volumes:
+      - ./models:/app/models
+      - vardax-data:/app/data
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - vardax-internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ========================================================================
+  # VARDAx Dashboard (React)
+  # ========================================================================
+  vardax-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=${VITE_API_URL:-https://your-domain.com/api/v1}
+    container_name: vardax-dashboard
+    restart: unless-stopped
+    expose:
+      - "3000"
+    networks:
+      - vardax-internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ========================================================================
+  # Redis (Streaming + Caching)
+  # ========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: vardax-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-change-me}
+    expose:
+      - "6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - vardax-internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ========================================================================
+  # PostgreSQL with TimescaleDB
+  # ========================================================================
+  postgres:
+    image: timescale/timescaledb:latest-pg15
+    container_name: vardax-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=vardax
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-change-me-in-production}
+      - POSTGRES_DB=vardax
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    expose:
+      - "5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./backend/scripts/init_db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - vardax-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vardax"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ========================================================================
+  # Continuous Learning Worker (Optional)
+  # ========================================================================
+  vardax-learner:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: vardax-continuous-learner
+    restart: unless-stopped
+    command: python -m app.workers.continuous_learning_worker
+    environment:
+      - VARDAX_DATABASE_URL=postgresql://vardax:${POSTGRES_PASSWORD}@postgres:5432/vardax
+      - VARDAX_REDIS_URL=redis://redis:6379
+    volumes:
+      - ./models:/app/models
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - vardax-internal
+
+  # ========================================================================
+  # Prometheus (Metrics)
+  # ========================================================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: vardax-prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+    expose:
+      - "9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - vardax-internal
+
+  # ========================================================================
+  # Grafana (Dashboards)
+  # ========================================================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: vardax-grafana
+    restart: unless-stopped
+    expose:
+      - "3001"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_INSTALL_PLUGINS=grafana-clock-panel
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    networks:
+      - vardax-internal
+    depends_on:
+      - prometheus
+
+# ============================================================================
+# NETWORKS
+# ============================================================================
+networks:
+  vardax-edge:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
+  
+  vardax-internal:
+    driver: bridge
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.21.0.0/24
+
+# ============================================================================
+# VOLUMES
+# ============================================================================
+volumes:
+  nginx-logs:
+  redis-data:
+  postgres-data:
+  vardax-data:
+  prometheus-data:
+  grafana-data:
