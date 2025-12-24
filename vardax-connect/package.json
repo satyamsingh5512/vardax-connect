@@ -1,0 +1,40 @@
+{
+  "name": "vardax-connect",
+  "version": "1.0.0",
+  "description": "Connect any Node.js application to VARDAx ML-Powered WAF with a simple connection string",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "scripts": {
+    "test": "node test/test.js"
+  },
+  "keywords": [
+    "vardax",
+    "waf",
+    "security",
+    "firewall",
+    "ml",
+    "anomaly-detection",
+    "middleware",
+    "express"
+  ],
+  "author": "Your Name <your.email@example.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-github-username/vardax"
+  },
+  "homepage": "https://github.com/your-github-username/vardax#readme",
+  "bugs": {
+    "url": "https://github.com/your-github-username/vardax/issues"
+  },
+  "dependencies": {
+    "axios": "^1.6.2",
+    "vardax-connect": "^1.0.0"
+  },
+  "peerDependencies": {
+    "express": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
