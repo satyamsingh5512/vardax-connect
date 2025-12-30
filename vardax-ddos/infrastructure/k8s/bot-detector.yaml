@@ -1,0 +1,205 @@
+# vardax-ddos/infrastructure/k8s/bot-detector.yaml
+# VardaX Bot Detection Service Deployment
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bot-detector-config
+  namespace: vardax-ddos
+data:
+  config.yaml: |
+    model_path: /models/bot_detector_lgb_latest.txt
+    redis_url: redis://redis:6379
+    batch_size: 100
+    batch_timeout_ms: 10
+    cache_ttl: 60
+    
+    thresholds:
+      challenge: 0.5
+      block: 0.8
+    
+    features:
+      - hour_of_day
+      - day_of_week
+      - is_weekend
+      - requests_last_1s
+      - requests_last_10s
+      - requests_last_60s
+      - inter_request_interval
+      - ip_is_ipv6
+      - ip_first_octet
+      - ip_class
+      - asn_is_datacenter
+      - asn_normalized
+      - country_risk_score
+      - is_tor_exit
+      - is_vpn
+      - ja3_known_bot
+      - ja3_known_browser
+      - ja3_entropy
+      - tls_version_score
+      - cipher_strength
+      - has_sni
+      - method_encoded
+      - path_depth
+      - path_length
+      - query_param_count
+      - query_length
+      - header_count
+      - has_accept
+      - has_accept_language
+      - has_accept_encoding
+      - has_cookie
+      - has_referer
+      - content_length_normalized
+      - ua_is_bot
+      - ua_is_mobile
+      - ua_is_tablet
+      - ua_is_pc
+      - ua_browser_family
+      - ua_os_family
+      - ua_device_family
+      - ua_entropy
+      - challenge_passed
+      - challenge_time_normalized
+      - session_request_count
+      - session_unique_paths
+      - session_error_rate
+      - session_avg_interval
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bot-detector
+  namespace: vardax-ddos
+  labels:
+    app: bot-detector
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: bot-detector
+  template:
+    metadata:
+      labels:
+        app: bot-detector
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8083"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: bot-detector
+          image: vardax/bot-detector:latest
+          ports:
+            - containerPort: 8083
+              name: http
+            - containerPort: 9000
+              name: grpc
+          env:
+            - name: MODEL_PATH
+              value: /models/bot_detector_lgb_latest.txt
+            - name: REDIS_URL
+              value: redis://redis:6379
+            - name: BATCH_SIZE
+              value: "100"
+            - name: BATCH_TIMEOUT_MS
+              value: "10"
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "2000m"
+              memory: "4Gi"
+          volumeMounts:
+            - name: models
+              mountPath: /models
+            - name: config
+              mountPath: /etc/vardax
+            - name: geoip
+              mountPath: /usr/share/GeoIP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8083
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8083
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      volumes:
+        - name: models
+          persistentVolumeClaim:
+            claimName: bot-detector-models
+        - name: config
+          configMap:
+            name: bot-detector-config
+        - name: geoip
+          persistentVolumeClaim:
+            claimName: geoip-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bot-detector
+  namespace: vardax-ddos
+spec:
+  selector:
+    app: bot-detector
+  ports:
+    - name: http
+      port: 8083
+      targetPort: 8083
+    - name: grpc
+      port: 9000
+      targetPort: 9000
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: bot-detector-models
+  namespace: vardax-ddos
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: standard
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: geoip-data
+  namespace: vardax-ddos
+spec:
+  accessModes:
+    - ReadOnlyMany
+  resources:
+    requests:
+      storage: 500Mi
+  storageClassName: standard
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: bot-detector-hpa
+  namespace: vardax-ddos
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: bot-detector
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70

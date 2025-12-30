@@ -1,0 +1,36 @@
+# vardax-ddos/infrastructure/k8s/namespace.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vardax-ddos
+  labels:
+    app.kubernetes.io/name: vardax-ddos
+    app.kubernetes.io/component: security
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: vardax-quota
+  namespace: vardax-ddos
+spec:
+  hard:
+    requests.cpu: "20"
+    requests.memory: 40Gi
+    limits.cpu: "40"
+    limits.memory: 80Gi
+    pods: "100"
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: vardax-limits
+  namespace: vardax-ddos
+spec:
+  limits:
+    - default:
+        cpu: "500m"
+        memory: "512Mi"
+      defaultRequest:
+        cpu: "100m"
+        memory: "128Mi"
+      type: Container

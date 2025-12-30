@@ -1,0 +1,139 @@
+# vardax-ddos/monitoring/prometheus-rules.yaml
+# VardaX DDoS Protection - Alerting Rules
+
+groups:
+  - name: vardax-ddos-alerts
+    interval: 30s
+    rules:
+      # High request rate alert
+      - alert: VardaxHighRequestRate
+        expr: sum(rate(vardax_xdp_packets_total{action="total"}[1m])) > 100000
+        for: 2m
+        labels:
+          severity: warning
+          component: edge
+        annotations:
+          summary: "High request rate detected"
+          description: "Request rate is {{ $value | humanize }} pps, threshold is 100k pps"
+      
+      # DDoS attack detected
+      - alert: VardaxDDoSDetected
+        expr: sum(rate(vardax_xdp_packets_total{action="blocked"}[1m])) / sum(rate(vardax_xdp_packets_total{action="total"}[1m])) > 0.5
+        for: 1m
+        labels:
+          severity: critical
+          component: edge
+        annotations:
+          summary: "Possible DDoS attack detected"
+          description: "Block rate is {{ $value | humanizePercentage }}, more than 50% of traffic is being blocked"
+      
+      # Bot detection high score rate
+      - alert: VardaxHighBotRate
+        expr: sum(rate(vardax_bot_inference_requests_total{result="block"}[5m])) / sum(rate(vardax_bot_inference_requests_total[5m])) > 0.3
+        for: 5m
+        labels:
+          severity: warning
+          component: bot-detector
+        annotations:
+          summary: "High bot detection rate"
+          description: "{{ $value | humanizePercentage }} of requests are being blocked as bots"
+      
+      # Inference latency high
+      - alert: VardaxInferenceLatencyHigh
+        expr: histogram_quantile(0.99, rate(vardax_bot_inference_latency_seconds_bucket[5m])) > 0.01
+        for: 5m
+        labels:
+          severity: warning
+          component: bot-detector
+        annotations:
+          summary: "Bot detection inference latency high"
+          description: "P99 inference latency is {{ $value | humanizeDuration }}"
+      
+      # WAF blocking rate high
+      - alert: VardaxWAFBlockRateHigh
+        expr: sum(rate(vardax_waf_requests_blocked_total[5m])) > 1000
+        for: 5m
+        labels:
+          severity: warning
+          component: waf
+        annotations:
+          summary: "WAF blocking rate high"
+          description: "WAF is blocking {{ $value | humanize }} requests per second"
+      
+      # Challenge failure rate high
+      - alert: VardaxChallengeFailureRateHigh
+        expr: sum(rate(vardax_challenges_failed_total[5m])) / sum(rate(vardax_challenges_issued_total[5m])) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+          component: challenge
+        annotations:
+          summary: "High challenge failure rate"
+          description: "{{ $value | humanizePercentage }} of challenges are failing"
+      
+      # Rate limiter triggered
+      - alert: VardaxRateLimitTriggered
+        expr: sum(rate(vardax_rate_limit_exceeded_total[1m])) > 1000
+        for: 2m
+        labels:
+          severity: warning
+          component: rate-limiter
+        annotations:
+          summary: "Rate limiter heavily triggered"
+          description: "Rate limiter is blocking {{ $value | humanize }} requests per second"
+      
+      # Edge proxy error rate
+      - alert: VardaxEdgeProxyErrorRate
+        expr: sum(rate(envoy_http_downstream_rq_xx{envoy_response_code_class="5"}[5m])) / sum(rate(envoy_http_downstream_rq_total[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          component: edge-proxy
+        annotations:
+          summary: "High error rate at edge proxy"
+          description: "{{ $value | humanizePercentage }} of requests are returning 5xx errors"
+      
+      # Redis connection issues
+      - alert: VardaxRedisDown
+        expr: redis_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: redis
+        annotations:
+          summary: "Redis is down"
+          description: "Redis instance is not responding"
+      
+      # Bot detector service down
+      - alert: VardaxBotDetectorDown
+        expr: up{job="bot-detector"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: bot-detector
+        annotations:
+          summary: "Bot detector service is down"
+          description: "Bot detector service is not responding"
+
+  - name: vardax-ddos-recording
+    interval: 30s
+    rules:
+      # Total request rate
+      - record: vardax:request_rate:1m
+        expr: sum(rate(vardax_xdp_packets_total{action="total"}[1m]))
+      
+      # Block rate
+      - record: vardax:block_rate:1m
+        expr: sum(rate(vardax_xdp_packets_total{action="blocked"}[1m]))
+      
+      # Bot detection rate
+      - record: vardax:bot_detection_rate:5m
+        expr: sum(rate(vardax_bot_inference_requests_total{result="block"}[5m]))
+      
+      # Average inference latency
+      - record: vardax:inference_latency_avg:5m
+        expr: histogram_quantile(0.5, rate(vardax_bot_inference_latency_seconds_bucket[5m]))
+      
+      # P99 inference latency
+      - record: vardax:inference_latency_p99:5m
+        expr: histogram_quantile(0.99, rate(vardax_bot_inference_latency_seconds_bucket[5m]))

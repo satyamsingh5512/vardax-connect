@@ -1,0 +1,39 @@
+# vardax-ddos/bot-detector/requirements.txt
+# Bot Detection Service Dependencies
+
+# Web framework
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+pydantic==2.5.3
+
+# ML
+lightgbm==4.2.0
+numpy==1.26.3
+pandas==2.1.4
+scikit-learn==1.4.0
+shap==0.44.0
+
+# Optional: Neural network
+# torch==2.1.2
+# onnx==1.15.0
+# onnxruntime==1.16.3
+
+# Redis
+redis==5.0.1
+
+# GeoIP
+maxminddb==2.5.1
+
+# User agent parsing
+user-agents==2.2.0
+
+# Monitoring
+prometheus-client==0.19.0
+
+# gRPC (for Envoy ext_authz)
+grpcio==1.60.0
+grpcio-tools==1.60.0
+
+# Utilities
+python-dotenv==1.0.0
+pyyaml==6.0.1
