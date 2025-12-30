@@ -1,0 +1,55 @@
+# Fortress .gitignore
+# Security: Prevent accidental commit of sensitive files
+
+# Secrets (CRITICAL)
+secrets/*.pem
+secrets/*.key
+secrets/*.crt
+secrets/*.p12
+*.secret
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+ENV/
+.eggs/
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+
+# Docker
+*.log
+
+# SBOM (regenerate, don't commit)
+sbom/
+
+# Quarantine (security)
+/tmp/quarantine/

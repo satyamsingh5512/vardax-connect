@@ -1,0 +1,42 @@
+# Fortress Dependencies
+# Security: Pinned versions for reproducibility
+
+# Core Framework
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+starlette==0.35.1
+pydantic==2.5.3
+
+# Async Support
+anyio==4.2.0
+httpx==0.26.0
+
+# Redis
+redis==5.0.1
+
+# Cryptography (FIPS-compatible algorithms available)
+cryptography==41.0.7
+pyOpenSSL==23.3.0
+python-jose[cryptography]==3.3.0
+
+# Database
+asyncpg==0.29.0
+SQLAlchemy==2.0.25
+
+# Testing
+pytest==7.4.4
+pytest-asyncio==0.23.3
+pytest-cov==4.1.0
+httpx==0.26.0
+
+# Utilities
+python-multipart==0.0.6
+python-dotenv==1.0.0
+
+# GraphQL (optional)
+# strawberry-graphql==0.217.1
+
+# Development
+black==23.12.1
+mypy==1.8.0
+ruff==0.1.11
