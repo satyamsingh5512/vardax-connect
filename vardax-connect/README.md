@@ -125,6 +125,55 @@ app.use(vardax(connectionString));
 
 ## 🔧 Advanced Usage
 
+### Rate Limiting with Redis
+
+VARDAx Connect includes a production-ready rate limiter with Redis backend:
+
+```javascript
+const express = require('express');
+const Redis = require('ioredis');
+const vardax = require('@vardax/connect');
+const { VardaxRateLimiter } = require('@vardax/connect');
+
+const app = express();
+
+// Initialize Redis
+const redis = new Redis({
+    host: process.env.REDIS_HOST || 'localhost',
+    port: 6379
+});
+
+// Initialize rate limiter
+const rateLimiter = new VardaxRateLimiter({
+    redis: redis,
+    debug: true,
+    endpointLimits: {
+        '/api/auth/login': 'auth',    // 5 req per 50s
+        '/api/v1/': 'api',            // 60 req per minute
+        '/graphql': 'strict'          // 20 req per 10s
+    }
+});
+
+// Layer 1: Rate limiting
+app.use(rateLimiter.middleware({ skipPaths: ['/health'] }));
+
+// Layer 2: VARDAx ML protection
+app.use(vardax('vardax://localhost:8000?mode=protect'));
+
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+    await rateLimiter.close();
+    process.exit(0);
+});
+```
+
+Rate limit profiles:
+- `default`: 100 req, 10/s refill
+- `strict`: 20 req, 2/s refill
+- `relaxed`: 500 req, 50/s refill
+- `auth`: 5 req, 0.1/s refill
+- `api`: 60 req, 1/s refill
+
 ### Manual Analysis (Without Middleware)
 
 ```javascript

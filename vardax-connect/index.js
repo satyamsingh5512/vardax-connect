@@ -249,3 +249,6 @@ module.exports.createMiddleware = createMiddleware;
 module.exports.createClient = createClient;
 module.exports.parseConnectionString = parseConnectionString;
 module.exports.extractFeatures = extractFeatures;
+
+// Rate limiter export
+module.exports.VardaxRateLimiter = require('./lib/rate-limiter').VardaxRateLimiter;

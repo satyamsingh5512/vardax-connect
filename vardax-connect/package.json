@@ -5,7 +5,10 @@
   "main": "index.js",
   "types": "index.d.ts",
   "scripts": {
-    "test": "node test/test.js"
+    "test": "node test/test-all.js",
+    "test:basic": "node test/test.js",
+    "test:rate-limiter": "node test/test-rate-limiter.js",
+    "test:all": "node test/test-all.js"
   },
   "keywords": [
     "vardax",
