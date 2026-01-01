@@ -1,214 +1,162 @@
 import { useEffect, useState } from 'react';
-import './LoadingScreen.css';
 
 interface LoadingScreenProps {
   onLoadComplete?: () => void;
 }
 
+const LOADING_STAGES = [
+  { progress: 15, text: 'Initializing Core Systems' },
+  { progress: 30, text: 'Loading ML Detection Models' },
+  { progress: 50, text: 'Establishing Secure Connection' },
+  { progress: 70, text: 'Calibrating Threat Analysis' },
+  { progress: 85, text: 'Syncing Rule Engine' },
+  { progress: 100, text: 'System Ready' },
+];
+
 export function LoadingScreen({ onLoadComplete }: LoadingScreenProps) {
   const [progress, setProgress] = useState(0);
-  const [loadingText, setLoadingText] = useState('Initializing Security Systems');
+  const [statusText, setStatusText] = useState('Initializing...');
 
   useEffect(() => {
-    const stages = [
-      { progress: 20, text: 'Loading ML Models' },
-      { progress: 40, text: 'Establishing Secure Connection' },
-      { progress: 60, text: 'Analyzing Threat Intelligence' },
-      { progress: 80, text: 'Calibrating Detection Algorithms' },
-      { progress: 100, text: 'System Ready' },
-    ];
-
     let currentStage = 0;
+    
     const interval = setInterval(() => {
-      if (currentStage < stages.length) {
-        setProgress(stages[currentStage].progress);
-        setLoadingText(stages[currentStage].text);
+      if (currentStage < LOADING_STAGES.length - 1) {
         currentStage++;
+        setProgress(LOADING_STAGES[currentStage].progress);
+        setStatusText(LOADING_STAGES[currentStage].text);
       } else {
         clearInterval(interval);
-        setTimeout(() => {
-          onLoadComplete?.();
-        }, 500);
+        setTimeout(() => onLoadComplete?.(), 400);
       }
-    }, 800);
+    }, 600);
+
+    // Initial state
+    setProgress(LOADING_STAGES[0].progress);
+    setStatusText(LOADING_STAGES[0].text);
 
     return () => clearInterval(interval);
   }, [onLoadComplete]);
 
   return (
-    <div className="loading-screen">
-      {/* Animated background grid */}
-      <div className="grid-background" />
-      
-      {/* Particle effects */}
-      <div className="particles">
-        {Array.from({ length: 50 }).map((_, i) => (
-          <div
-            key={i}
-            className="particle"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 3}s`,
-              animationDuration: `${3 + Math.random() * 4}s`,
-            }}
-          />
-        ))}
-      </div>
+    <div className="vardax-loading">
+      {/* Background effects */}
+      <div className="hex-grid" />
+      <div className="scan-lines" />
+      <div className="scan-beam" />
 
       {/* Main content */}
-      <div className="loading-content">
-        {/* Logo container with glow effect */}
-        <div className="logo-container">
-          <div className="logo-glow" />
-          <div className="shield-container">
-            {/* Shield outline with animation */}
-            <svg className="shield-svg" viewBox="0 0 200 220" xmlns="http://www.w3.org/2000/svg">
-              {/* Outer shield glow */}
-              <defs>
-                <filter id="glow">
-                  <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
-                  <feMerge>
-                    <feMergeNode in="coloredBlur"/>
-                    <feMergeNode in="SourceGraphic"/>
-                  </feMerge>
-                </filter>
-                <linearGradient id="shieldGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" style={{ stopColor: '#60a5fa', stopOpacity: 1 }} />
-                  <stop offset="100%" style={{ stopColor: '#1e40af', stopOpacity: 1 }} />
-                </linearGradient>
-                <linearGradient id="xGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" style={{ stopColor: '#93c5fd', stopOpacity: 1 }} />
-                  <stop offset="50%" style={{ stopColor: '#ffffff', stopOpacity: 1 }} />
-                  <stop offset="100%" style={{ stopColor: '#93c5fd', stopOpacity: 1 }} />
-                </linearGradient>
-              </defs>
+      <div className="loading-main">
+        {/* Shield Logo */}
+        <div className="shield-logo">
+          <div className="shield-pulse" />
+          <div className="shield-pulse" />
+          <div className="shield-pulse" />
+          <svg viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="var(--accent-cyan)" />
+                <stop offset="50%" stopColor="var(--accent-blue)" />
+                <stop offset="100%" stopColor="var(--accent-purple)" />
+              </linearGradient>
+              <filter id="glow">
+                <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                <feMerge>
+                  <feMergeNode in="coloredBlur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+            </defs>
+            {/* Shield outline */}
+            <path
+              d="M50 8L88 22V52C88 78 68 98 50 112C32 98 12 78 12 52V22L50 8Z"
+              fill="url(#shieldGrad)"
+              fillOpacity="0.15"
+              stroke="url(#shieldGrad)"
+              strokeWidth="2"
+              filter="url(#glow)"
+            />
+            {/* Inner shield */}
+            <path
+              d="M50 18L78 28V52C78 72 62 88 50 98C38 88 22 72 22 52V28L50 18Z"
+              fill="none"
+              stroke="var(--accent-blue)"
+              strokeWidth="1"
+              strokeOpacity="0.5"
+            />
+            {/* V symbol */}
+            <path
+              d="M35 45L50 75L65 45"
+              fill="none"
+              stroke="url(#shieldGrad)"
+              strokeWidth="4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              filter="url(#glow)"
+            />
+            {/* Checkmark accent */}
+            <path
+              d="M42 58L48 64L58 50"
+              fill="none"
+              stroke="var(--accent-green)"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              opacity={progress >= 100 ? 1 : 0}
+              style={{ transition: 'opacity 0.3s ease' }}
+            />
+          </svg>
+        </div>
 
-              {/* Shield path */}
-              <path
-                className="shield-path"
-                d="M100 20 L170 40 L170 100 Q170 150 100 200 Q30 150 30 100 L30 40 Z"
-                fill="url(#shieldGradient)"
-                stroke="#60a5fa"
-                strokeWidth="3"
-                filter="url(#glow)"
-              />
+        {/* Brand */}
+        <div className="loading-brand">
+          <h1>VARDAx</h1>
+          <p>ML-Powered WAF Protection</p>
+        </div>
 
-              {/* Inner shield detail */}
-              <path
-                className="shield-inner"
-                d="M100 30 L160 48 L160 100 Q160 145 100 190 Q40 145 40 100 L40 48 Z"
-                fill="none"
-                stroke="#3b82f6"
-                strokeWidth="1"
-                opacity="0.5"
-              />
-
-              {/* X symbol */}
-              <g className="x-symbol" transform="translate(100, 110)">
-                <rect
-                  x="-40"
-                  y="-8"
-                  width="80"
-                  height="16"
-                  rx="4"
-                  transform="rotate(-45)"
-                  fill="url(#xGradient)"
-                  filter="url(#glow)"
-                />
-                <rect
-                  x="-40"
-                  y="-8"
-                  width="80"
-                  height="16"
-                  rx="4"
-                  transform="rotate(45)"
-                  fill="url(#xGradient)"
-                  filter="url(#glow)"
-                />
-              </g>
-
-              {/* Top crown */}
-              <path
-                className="crown"
-                d="M100 20 L90 10 L100 0 L110 10 Z"
-                fill="#ffffff"
-                filter="url(#glow)"
-              />
-
-              {/* Scanning line effect */}
-              <line
-                className="scan-line"
-                x1="30"
-                y1="50"
-                x2="170"
-                y2="50"
-                stroke="#60a5fa"
-                strokeWidth="2"
-                opacity="0.6"
-              />
-            </svg>
-
-            {/* Rotating rings */}
-            <div className="ring ring-1" />
-            <div className="ring ring-2" />
-            <div className="ring ring-3" />
+        {/* Progress */}
+        <div className="loading-progress-section">
+          <div className="loading-progress-bar">
+            <div 
+              className="loading-progress-fill" 
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <div className="loading-status">
+            <span className="loading-status-text">{statusText}</span>
+            <span className="loading-status-percent">{progress}%</span>
           </div>
         </div>
 
-        {/* Brand name with glitch effect */}
-        <div className="brand-container">
-          <h1 className="brand-name" data-text="VARDAx">
-            VARDAx
-          </h1>
-          <p className="brand-tagline">ML-Powered WAF Protection</p>
-        </div>
-
-        {/* Loading progress */}
-        <div className="loading-progress">
-          <div className="progress-bar-container">
-            <div className="progress-bar" style={{ width: `${progress}%` }}>
-              <div className="progress-glow" />
-            </div>
-            <div className="progress-segments">
-              {Array.from({ length: 20 }).map((_, i) => (
-                <div key={i} className="segment" />
-              ))}
-            </div>
-          </div>
-          
-          <div className="loading-info">
-            <span className="loading-text">{loadingText}</span>
-            <span className="loading-percentage">{progress}%</span>
-          </div>
-        </div>
-
-        {/* Status indicators */}
-        <div className="status-indicators">
-          <div className={`status-item ${progress >= 20 ? 'active' : ''}`}>
-            <div className="status-dot" />
+        {/* System checks */}
+        <div className="system-checks">
+          <div className={`system-check ${progress >= 30 ? 'active' : ''}`}>
+            <span className="system-check-dot" />
             <span>ML Engine</span>
           </div>
-          <div className={`status-item ${progress >= 40 ? 'active' : ''}`}>
-            <div className="status-dot" />
+          <div className={`system-check ${progress >= 50 ? 'active' : ''}`}>
+            <span className="system-check-dot" />
             <span>Network</span>
           </div>
-          <div className={`status-item ${progress >= 60 ? 'active' : ''}`}>
-            <div className="status-dot" />
+          <div className={`system-check ${progress >= 70 ? 'active' : ''}`}>
+            <span className="system-check-dot" />
             <span>Threat Intel</span>
           </div>
-          <div className={`status-item ${progress >= 80 ? 'active' : ''}`}>
-            <div className="status-dot" />
-            <span>Detection</span>
+          <div className={`system-check ${progress >= 85 ? 'active' : ''}`}>
+            <span className="system-check-dot" />
+            <span>Rules</span>
           </div>
         </div>
       </div>
 
-      {/* Corner decorations */}
-      <div className="corner-decoration top-left" />
-      <div className="corner-decoration top-right" />
-      <div className="corner-decoration bottom-left" />
-      <div className="corner-decoration bottom-right" />
+      {/* Corner brackets */}
+      <div className="corner-bracket top-left" />
+      <div className="corner-bracket top-right" />
+      <div className="corner-bracket bottom-left" />
+      <div className="corner-bracket bottom-right" />
+
+      {/* Version */}
+      <div className="version-tag">v1.0.0</div>
     </div>
   );
 }

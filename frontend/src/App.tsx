@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useDashboardStore } from './store';
 import { api, connectWebSocket } from './api';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { Header } from './components/Header';
 import { Navigation } from './components/Navigation';
 import { Overview } from './components/Overview';
@@ -15,7 +16,7 @@ import { RuleSimulator } from './components/RuleSimulator';
 import { Settings } from './components/Settings';
 import { LoadingScreen } from './components/LoadingScreen';
 
-function App() {
+function AppContent() {
   const [isLoading, setIsLoading] = useState(true);
   const {
     activeTab,
@@ -161,6 +162,14 @@ function generateMockRules() {
       status: 'pending' as const,
     },
   ];
+}
+
+function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
+  );
 }
 
 export default App;
