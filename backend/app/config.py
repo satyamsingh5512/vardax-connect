@@ -15,12 +15,9 @@ class Settings(BaseSettings):
     debug: bool = False
     api_prefix: str = "/api/v1"
     
-    # CORS - Allow Vercel frontend
+    # CORS - Allow all origins for development/ngrok
     cors_origins: list = [
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "https://vardax.vercel.app",
-        "https://*.vercel.app",
+        "*",  # Allow all for ngrok tunnels
     ]
     
     # Database
