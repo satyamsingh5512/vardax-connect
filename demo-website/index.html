@@ -276,8 +276,9 @@
             <input 
                 type="text" 
                 id="vardaxUrl" 
-                placeholder="http://your-ip:8000"
-                value="http://localhost:8000"
+                placeholder="https://your-ngrok-url.ngrok-free.dev"
+                value="https://spectrological-cinda-unfunereally.ngrok-free.dev"
+                onchange="registerWithVardax()"
             >
             <small>Enter your local VARDAx URL (use ngrok for remote access)</small>
         </div>
@@ -425,7 +426,7 @@
 
         // Send request to VARDAx
         async function sendRequest(data, isAttack = false) {
-            const vardaxUrl = document.getElementById('vardaxUrl').value;
+            const vardaxUrl = document.getElementById('vardaxUrl').value.replace(/\/$/, '');
             const url = `${vardaxUrl}/api/v1/traffic/ingest`;
 
             try {
@@ -433,7 +434,9 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'ngrok-skip-browser-warning': 'true'
                     },
+                    mode: 'cors',
                     body: JSON.stringify(data)
                 });
 
@@ -458,6 +461,35 @@
                 updateStatus(false);
                 log(`❌ Error: ${error.message}`, 'error');
                 return false;
+            }
+        }
+
+        // Register this site with VARDAx on load
+        async function registerWithVardax() {
+            const vardaxUrl = document.getElementById('vardaxUrl').value.replace(/\/$/, '');
+            try {
+                const response = await fetch(`${vardaxUrl}/api/v1/services/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'ngrok-skip-browser-warning': 'true'
+                    },
+                    mode: 'cors',
+                    body: JSON.stringify({
+                        name: 'VARDAx Demo Site',
+                        host: location.hostname,
+                        port: location.port || (location.protocol === 'https:' ? 443 : 80),
+                        environment: location.hostname.includes('vercel') ? 'production' : 'development',
+                        framework: 'browser-sdk',
+                        mode: 'monitor'
+                    })
+                });
+                if (response.ok) {
+                    log('✅ Registered with VARDAx', 'info');
+                    updateStatus(true);
+                }
+            } catch (e) {
+                log('⚠️ Could not register with VARDAx - check URL', 'warning');
             }
         }
 
@@ -559,6 +591,9 @@
         // Initial log
         log('💡 Tip: Press N for normal, A for attack, S to start/stop', 'info');
         log('💡 Double-click anywhere to start continuous traffic', 'info');
+        
+        // Try to register on page load
+        setTimeout(registerWithVardax, 1000);
     </script>
 </body>
 </html>
