@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useDashboardStore } from '../store';
 import { api } from '../api';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
-import clsx from 'clsx';
 
 export function Overview() {
   const { anomalies, pendingRules, modelHealth } = useDashboardStore();
@@ -28,31 +27,27 @@ export function Overview() {
   // Generate traffic data from anomalies
   useEffect(() => {
     if (anomalies.length > 0) {
-      // Group anomalies by hour
       const hourlyData = new Map();
       const now = new Date();
       
-      // Initialize last 24 hours
       for (let i = 23; i >= 0; i--) {
         const hour = new Date(now.getTime() - i * 60 * 60 * 1000);
         const key = hour.getHours();
         hourlyData.set(key, { time: `${key}:00`, requests: 0, anomalies: 0 });
       }
       
-      // Count anomalies per hour
       anomalies.forEach(a => {
         const date = new Date(a.timestamp);
         const hour = date.getHours();
         if (hourlyData.has(hour)) {
           const data = hourlyData.get(hour);
           data.anomalies += 1;
-          data.requests += 10; // Estimate ~10 requests per anomaly
+          data.requests += 10;
         }
       });
       
       setTrafficData(Array.from(hourlyData.values()));
     } else {
-      // Empty state
       setTrafficData(Array.from({ length: 24 }, (_, i) => ({
         time: `${i}:00`,
         requests: 0,
@@ -61,15 +56,13 @@ export function Overview() {
     }
   }, [anomalies]);
   
-  // Calculate severity distribution from actual anomalies
   const severityData = [
-    { name: 'Critical', value: anomalies.filter(a => a.severity === 'critical').length, color: '#dc2626' },
-    { name: 'High', value: anomalies.filter(a => a.severity === 'high').length, color: '#ef4444' },
-    { name: 'Medium', value: anomalies.filter(a => a.severity === 'medium').length, color: '#f59e0b' },
-    { name: 'Low', value: anomalies.filter(a => a.severity === 'low').length, color: '#10b981' },
+    { name: 'Critical', value: anomalies.filter(a => a.severity === 'critical').length, color: '#ff4757' },
+    { name: 'High', value: anomalies.filter(a => a.severity === 'high').length, color: '#ff6b6b' },
+    { name: 'Medium', value: anomalies.filter(a => a.severity === 'medium').length, color: '#ffa502' },
+    { name: 'Low', value: anomalies.filter(a => a.severity === 'low').length, color: '#2ed573' },
   ];
   
-  // Calculate attack categories from actual anomalies
   const categoryCount = new Map<string, number>();
   anomalies.forEach(a => {
     if (a.attack_category) {
@@ -86,7 +79,6 @@ export function Overview() {
     .sort((a, b) => b.count - a.count)
     .slice(0, 5);
   
-  // Calculate false positive rate
   const reviewedAnomalies = anomalies.filter(a => a.status === 'reviewed');
   const falsePositives = reviewedAnomalies.length > 0 
     ? (reviewedAnomalies.filter(a => a.status === 'reviewed').length / reviewedAnomalies.length * 100).toFixed(1)
@@ -96,75 +88,92 @@ export function Overview() {
   const totalAnomalies = anomalies.length;
   
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 overflow-auto h-full" style={{ background: 'var(--bg-primary)' }}>
       {/* Stats Cards */}
       <div className="grid grid-cols-4 gap-4">
         <StatCard
           title="Total Requests (24h)"
           value={totalRequests > 0 ? formatNumber(totalRequests) : '0'}
           subtitle={liveStats ? `${liveStats.requests_per_second.toFixed(1)} req/s` : 'No traffic yet'}
+          variant="default"
         />
         <StatCard
           title="Anomalies Detected"
           value={totalAnomalies.toString()}
           subtitle={liveStats ? `${liveStats.anomalies_per_minute} per minute` : 'No anomalies'}
+          variant="warning"
         />
         <StatCard
           title="Rules Pending"
           value={pendingRules.filter(r => r.status === 'pending').length.toString()}
           subtitle="Awaiting approval"
+          variant="default"
         />
         <StatCard
           title="False Positive Rate"
           value={`${falsePositives}%`}
           subtitle={reviewedAnomalies.length > 0 ? `${reviewedAnomalies.length} reviewed` : 'No data yet'}
+          variant="success"
         />
       </div>
       
       {/* Charts Row */}
       <div className="grid grid-cols-2 gap-6">
-        {/* Traffic Chart */}
-        <div className="bg-vardax-card rounded-lg p-4 border border-vardax-border">
-          <h3 className="text-sm font-medium text-vardax-muted mb-4">Traffic Overview (24h)</h3>
+        <div className="chart-container">
+          <div className="chart-header">
+            <h3 className="chart-title">Traffic Overview (24h)</h3>
+          </div>
           <ResponsiveContainer width="100%" height={200}>
             <AreaChart data={trafficData}>
               <defs>
                 <linearGradient id="trafficGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#388bfd" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#388bfd" stopOpacity={0}/>
                 </linearGradient>
               </defs>
-              <XAxis dataKey="time" stroke="#718096" fontSize={10} />
-              <YAxis stroke="#718096" fontSize={10} />
+              <XAxis dataKey="time" stroke="#6e7681" fontSize={10} tickLine={false} axisLine={false} />
+              <YAxis stroke="#6e7681" fontSize={10} tickLine={false} axisLine={false} />
               <Tooltip
-                contentStyle={{ backgroundColor: '#1a1f2e', border: '1px solid #2d3748' }}
-                labelStyle={{ color: '#e2e8f0' }}
+                contentStyle={{ 
+                  backgroundColor: '#161b22', 
+                  border: '1px solid #21262d',
+                  borderRadius: '6px',
+                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.4)'
+                }}
+                labelStyle={{ color: '#f0f6fc' }}
               />
               <Area
                 type="monotone"
                 dataKey="requests"
-                stroke="#3b82f6"
+                stroke="#388bfd"
+                strokeWidth={2}
                 fill="url(#trafficGradient)"
               />
             </AreaChart>
           </ResponsiveContainer>
         </div>
         
-        {/* Anomaly Chart */}
-        <div className="bg-vardax-card rounded-lg p-4 border border-vardax-border">
-          <h3 className="text-sm font-medium text-vardax-muted mb-4">Anomalies (24h)</h3>
+        <div className="chart-container">
+          <div className="chart-header">
+            <h3 className="chart-title">Anomalies (24h)</h3>
+          </div>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={trafficData}>
-              <XAxis dataKey="time" stroke="#718096" fontSize={10} />
-              <YAxis stroke="#718096" fontSize={10} />
+              <XAxis dataKey="time" stroke="#6e7681" fontSize={10} tickLine={false} axisLine={false} />
+              <YAxis stroke="#6e7681" fontSize={10} tickLine={false} axisLine={false} />
               <Tooltip
-                contentStyle={{ backgroundColor: '#1a1f2e', border: '1px solid #2d3748' }}
-                labelStyle={{ color: '#e2e8f0' }}
+                contentStyle={{ 
+                  backgroundColor: '#161b22', 
+                  border: '1px solid #21262d',
+                  borderRadius: '6px',
+                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.4)'
+                }}
+                labelStyle={{ color: '#f0f6fc' }}
               />
               <Line
                 type="monotone"
                 dataKey="anomalies"
-                stroke="#f59e0b"
+                stroke="#ffa502"
                 strokeWidth={2}
                 dot={false}
               />
@@ -176,73 +185,79 @@ export function Overview() {
       {/* Bottom Row */}
       <div className="grid grid-cols-3 gap-6">
         {/* Severity Distribution */}
-        <div className="bg-vardax-card rounded-lg p-4 border border-vardax-border">
-          <h3 className="text-sm font-medium text-vardax-muted mb-4">Severity Distribution</h3>
-          <div className="space-y-3">
+        <div className="card">
+          <div className="card-header">
+            <h3 className="card-title">Severity Distribution</h3>
+          </div>
+          <div className="card-body space-y-3">
             {severityData.map((item) => (
-              <div key={item.name} className="flex items-center gap-3">
-                <div
-                  className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: item.color }}
-                />
-                <span className="text-sm text-vardax-text flex-1">{item.name}</span>
-                <span className="text-sm font-medium text-white">{item.value}</span>
-                <div className="w-24 h-2 bg-vardax-border rounded-full overflow-hidden">
+              <div key={item.name} className="score-bar">
+                <span className="score-label flex items-center gap-2">
+                  <span className="severity-dot" style={{ backgroundColor: item.color }} />
+                  {item.name}
+                </span>
+                <div className="score-track">
                   <div
-                    className="h-full rounded-full"
+                    className="score-fill"
                     style={{
-                      width: `${(item.value / 88) * 100}%`,
+                      width: `${Math.min((item.value / Math.max(totalAnomalies, 1)) * 100, 100)}%`,
                       backgroundColor: item.color,
                     }}
                   />
                 </div>
+                <span className="score-value">{item.value}</span>
               </div>
             ))}
           </div>
         </div>
         
         {/* Top Attack Categories */}
-        <div className="bg-vardax-card rounded-lg p-4 border border-vardax-border">
-          <h3 className="text-sm font-medium text-vardax-muted mb-4">Top Attack Categories</h3>
-          <div className="space-y-3">
+        <div className="card">
+          <div className="card-header">
+            <h3 className="card-title">Top Attack Categories</h3>
+          </div>
+          <div className="card-body space-y-3">
             {topCategories.length > 0 ? (
               topCategories.map((cat) => (
                 <div key={cat.name} className="flex items-center gap-3">
                   <span className="text-lg">{cat.icon}</span>
-                  <span className="text-sm text-vardax-text flex-1">{cat.name}</span>
-                  <span className="text-sm font-medium text-white">{cat.count}</span>
+                  <span className="text-sm flex-1" style={{ color: 'var(--text-secondary)' }}>{cat.name}</span>
+                  <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{cat.count}</span>
                 </div>
               ))
             ) : (
-              <div className="text-sm text-vardax-muted text-center py-4">
-                No attack data yet
+              <div className="empty-state">
+                <div className="empty-state-icon">📊</div>
+                <div className="empty-state-text">No attack data yet</div>
               </div>
             )}
           </div>
         </div>
         
         {/* Model Status */}
-        <div className="bg-vardax-card rounded-lg p-4 border border-vardax-border">
-          <h3 className="text-sm font-medium text-vardax-muted mb-4">ML Model Status</h3>
-          <div className="space-y-3">
+        <div className="card">
+          <div className="card-header">
+            <h3 className="card-title">ML Model Status</h3>
+          </div>
+          <div className="card-body space-y-3">
             {(modelHealth.length > 0 ? modelHealth : [
               { model_name: 'Isolation Forest', avg_inference_time_ms: 5.2, anomaly_rate_24h: 0.02 },
               { model_name: 'Autoencoder', avg_inference_time_ms: 12.5, anomaly_rate_24h: 0.025 },
               { model_name: 'EWMA Baseline', avg_inference_time_ms: 0.5, anomaly_rate_24h: 0.018 },
             ]).map((model) => (
               <div key={model.model_name} className="flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full bg-severity-normal" />
-                <span className="text-sm text-vardax-text flex-1">{model.model_name}</span>
-                <span className="text-xs text-vardax-muted">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--accent-green)' }} />
+                <span className="text-sm flex-1" style={{ color: 'var(--text-secondary)' }}>{model.model_name}</span>
+                <span className="text-xs font-mono" style={{ color: 'var(--text-tertiary)' }}>
                   {model.avg_inference_time_ms.toFixed(1)}ms
                 </span>
               </div>
             ))}
           </div>
-          <div className="mt-4 pt-4 border-t border-vardax-border">
+          <div className="card-footer">
             <div className="flex justify-between text-sm">
-              <span className="text-vardax-muted">Combined Latency</span>
-              <span className="text-white font-medium">18.2ms</span>
+              <span style={{ color: 'var(--text-tertiary)' }}>Combined Latency</span>
+              <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>18.2ms</span>
             </div>
           </div>
         </div>
@@ -257,29 +272,28 @@ function StatCard({
   change,
   positive,
   subtitle,
+  variant = 'default',
 }: {
   title: string;
   value: string;
   change?: string;
   positive?: boolean;
   subtitle?: string;
+  variant?: 'default' | 'warning' | 'critical' | 'success';
 }) {
   return (
-    <div className="bg-vardax-card rounded-lg p-4 border border-vardax-border">
-      <div className="text-sm text-vardax-muted mb-1">{title}</div>
+    <div className={`stat-card ${variant}`}>
+      <div className="stat-label">{title}</div>
       <div className="flex items-end gap-2">
-        <span className="text-2xl font-bold text-white">{value}</span>
+        <span className="stat-value">{value}</span>
         {change && (
-          <span className={clsx(
-            'text-sm font-medium',
-            positive ? 'text-severity-normal' : 'text-severity-high'
-          )}>
-            {change}
+          <span className={`stat-change ${positive ? 'positive' : 'negative'}`}>
+            {positive ? '↑' : '↓'} {change}
           </span>
         )}
       </div>
       {subtitle && (
-        <div className="text-xs text-vardax-muted mt-1">{subtitle}</div>
+        <div className="stat-subtitle">{subtitle}</div>
       )}
     </div>
   );

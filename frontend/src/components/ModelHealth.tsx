@@ -1,6 +1,5 @@
 import { useDashboardStore } from '../store';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import clsx from 'clsx';
 
 // Mock inference latency data
 const latencyData = Array.from({ length: 60 }, (_, i) => ({
@@ -13,7 +12,6 @@ const latencyData = Array.from({ length: 60 }, (_, i) => ({
 export function ModelHealth() {
   const { modelHealth } = useDashboardStore();
   
-  // Use mock data if no real data
   const models = modelHealth.length > 0 ? modelHealth : [
     {
       model_name: 'Isolation Forest',
@@ -48,11 +46,11 @@ export function ModelHealth() {
   ];
   
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 overflow-auto h-full" style={{ background: 'var(--bg-primary)' }}>
       {/* Header */}
       <div>
-        <h2 className="text-lg font-medium text-white">ML Model Health</h2>
-        <p className="text-sm text-vardax-muted">
+        <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>ML Model Health</h2>
+        <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
           Monitor model performance, latency, and accuracy metrics
         </p>
       </div>
@@ -65,109 +63,76 @@ export function ModelHealth() {
       </div>
       
       {/* Latency Chart */}
-      <div className="bg-vardax-card rounded-lg p-4 border border-vardax-border">
-        <h3 className="text-sm font-medium text-vardax-muted mb-4">
-          Inference Latency (Last 60 seconds)
-        </h3>
+      <div className="chart-container">
+        <div className="chart-header">
+          <h3 className="chart-title">Inference Latency (Last 60 seconds)</h3>
+        </div>
         <ResponsiveContainer width="100%" height={200}>
           <LineChart data={latencyData}>
-            <XAxis dataKey="time" stroke="#718096" fontSize={10} />
-            <YAxis stroke="#718096" fontSize={10} unit="ms" />
+            <XAxis dataKey="time" stroke="#6e7681" fontSize={10} tickLine={false} axisLine={false} />
+            <YAxis stroke="#6e7681" fontSize={10} unit="ms" tickLine={false} axisLine={false} />
             <Tooltip
-              contentStyle={{ backgroundColor: '#1a1f2e', border: '1px solid #2d3748' }}
-              labelStyle={{ color: '#e2e8f0' }}
+              contentStyle={{ 
+                backgroundColor: '#161b22', 
+                border: '1px solid #21262d',
+                borderRadius: '6px'
+              }}
+              labelStyle={{ color: '#f0f6fc' }}
             />
-            <Line
-              type="monotone"
-              dataKey="isolation_forest"
-              stroke="#3b82f6"
-              strokeWidth={2}
-              dot={false}
-              name="Isolation Forest"
-            />
-            <Line
-              type="monotone"
-              dataKey="autoencoder"
-              stroke="#8b5cf6"
-              strokeWidth={2}
-              dot={false}
-              name="Autoencoder"
-            />
-            <Line
-              type="monotone"
-              dataKey="ewma"
-              stroke="#10b981"
-              strokeWidth={2}
-              dot={false}
-              name="EWMA"
-            />
+            <Line type="monotone" dataKey="isolation_forest" stroke="#388bfd" strokeWidth={2} dot={false} name="Isolation Forest" />
+            <Line type="monotone" dataKey="autoencoder" stroke="#a371f7" strokeWidth={2} dot={false} name="Autoencoder" />
+            <Line type="monotone" dataKey="ewma" stroke="#3fb950" strokeWidth={2} dot={false} name="EWMA" />
           </LineChart>
         </ResponsiveContainer>
         <div className="flex justify-center gap-6 mt-4">
-          <LegendItem color="#3b82f6" label="Isolation Forest" />
-          <LegendItem color="#8b5cf6" label="Autoencoder" />
-          <LegendItem color="#10b981" label="EWMA Baseline" />
+          <LegendItem color="#388bfd" label="Isolation Forest" />
+          <LegendItem color="#a371f7" label="Autoencoder" />
+          <LegendItem color="#3fb950" label="EWMA Baseline" />
         </div>
       </div>
       
       {/* Ensemble Info */}
-      <div className="bg-vardax-card rounded-lg p-4 border border-vardax-border">
-        <h3 className="text-sm font-medium text-vardax-muted mb-4">Ensemble Configuration</h3>
-        <div className="grid grid-cols-2 gap-6">
-          <div>
-            <h4 className="text-xs text-vardax-muted mb-3">Model Weights</h4>
-            <div className="space-y-2">
-              <WeightBar label="Isolation Forest" weight={0.4} color="#3b82f6" />
-              <WeightBar label="Autoencoder" weight={0.35} color="#8b5cf6" />
-              <WeightBar label="EWMA Baseline" weight={0.25} color="#10b981" />
+      <div className="card">
+        <div className="card-header">
+          <h3 className="card-title">Ensemble Configuration</h3>
+        </div>
+        <div className="card-body">
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <h4 className="text-xs mb-3" style={{ color: 'var(--text-tertiary)' }}>Model Weights</h4>
+              <div className="space-y-3">
+                <WeightBar label="Isolation Forest" weight={0.4} color="#388bfd" />
+                <WeightBar label="Autoencoder" weight={0.35} color="#a371f7" />
+                <WeightBar label="EWMA Baseline" weight={0.25} color="#3fb950" />
+              </div>
             </div>
-          </div>
-          <div>
-            <h4 className="text-xs text-vardax-muted mb-3">Why This Ensemble?</h4>
-            <ul className="text-sm text-vardax-text space-y-2">
-              <li className="flex items-start gap-2">
-                <span className="text-blue-400">•</span>
-                <span><strong>Isolation Forest</strong> catches point anomalies (single weird requests)</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-purple-400">•</span>
-                <span><strong>Autoencoder</strong> catches pattern anomalies (unusual feature combinations)</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-400">•</span>
-                <span><strong>EWMA</strong> catches rate anomalies (traffic volume deviations)</span>
-              </li>
-            </ul>
+            <div>
+              <h4 className="text-xs mb-3" style={{ color: 'var(--text-tertiary)' }}>Why This Ensemble?</h4>
+              <ul className="text-sm space-y-2" style={{ color: 'var(--text-secondary)' }}>
+                <li className="flex items-start gap-2">
+                  <span style={{ color: '#388bfd' }}>•</span>
+                  <span><strong>Isolation Forest</strong> catches point anomalies</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span style={{ color: '#a371f7' }}>•</span>
+                  <span><strong>Autoencoder</strong> catches pattern anomalies</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span style={{ color: '#3fb950' }}>•</span>
+                  <span><strong>EWMA</strong> catches rate anomalies</span>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
       
       {/* Performance Summary */}
       <div className="grid grid-cols-4 gap-4">
-        <MetricCard
-          title="Combined Latency"
-          value="18.2ms"
-          subtitle="p99: 45ms"
-          status="good"
-        />
-        <MetricCard
-          title="Throughput"
-          value="5,200/sec"
-          subtitle="Target: 10,000/sec"
-          status="good"
-        />
-        <MetricCard
-          title="False Positive Rate"
-          value="1.8%"
-          subtitle="Target: <2%"
-          status="good"
-        />
-        <MetricCard
-          title="Detection Rate"
-          value="98.5%"
-          subtitle="On test set"
-          status="good"
-        />
+        <MetricCard title="Combined Latency" value="18.2ms" subtitle="p99: 45ms" status="good" />
+        <MetricCard title="Throughput" value="5,200/sec" subtitle="Target: 10,000/sec" status="good" />
+        <MetricCard title="False Positive Rate" value="1.8%" subtitle="Target: <2%" status="good" />
+        <MetricCard title="Detection Rate" value="98.5%" subtitle="On test set" status="good" />
       </div>
     </div>
   );
@@ -177,39 +142,23 @@ function ModelCard({ model }: { model: any }) {
   const isHealthy = model.avg_inference_time_ms < 50 && model.false_positive_rate < 0.05;
   
   return (
-    <div className="bg-vardax-card rounded-lg p-4 border border-vardax-border">
-      <div className="flex items-center justify-between mb-4">
+    <div className="card">
+      <div className="card-header">
         <div className="flex items-center gap-2">
-          <div className={clsx(
-            'w-2 h-2 rounded-full',
-            isHealthy ? 'bg-severity-normal' : 'bg-severity-medium'
-          )} />
-          <h3 className="font-medium text-white">{model.model_name}</h3>
+          <div 
+            className="w-2 h-2 rounded-full"
+            style={{ backgroundColor: isHealthy ? 'var(--accent-green)' : 'var(--accent-yellow)' }}
+          />
+          <h3 className="font-medium" style={{ color: 'var(--text-primary)' }}>{model.model_name}</h3>
         </div>
-        <span className="text-xs text-vardax-muted">v{model.version}</span>
+        <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>v{model.version}</span>
       </div>
-      
-      <div className="space-y-3">
-        <MetricRow
-          label="Avg Inference Time"
-          value={`${model.avg_inference_time_ms.toFixed(1)}ms`}
-        />
-        <MetricRow
-          label="Inferences (24h)"
-          value={model.inference_count_24h.toLocaleString()}
-        />
-        <MetricRow
-          label="Anomaly Rate"
-          value={`${(model.anomaly_rate_24h * 100).toFixed(1)}%`}
-        />
-        <MetricRow
-          label="False Positive Rate"
-          value={`${(model.false_positive_rate * 100).toFixed(1)}%`}
-        />
-        <MetricRow
-          label="Training Samples"
-          value={model.training_samples.toLocaleString()}
-        />
+      <div className="card-body space-y-3">
+        <MetricRow label="Avg Inference Time" value={`${model.avg_inference_time_ms.toFixed(1)}ms`} />
+        <MetricRow label="Inferences (24h)" value={model.inference_count_24h.toLocaleString()} />
+        <MetricRow label="Anomaly Rate" value={`${(model.anomaly_rate_24h * 100).toFixed(1)}%`} />
+        <MetricRow label="False Positive Rate" value={`${(model.false_positive_rate * 100).toFixed(1)}%`} />
+        <MetricRow label="Training Samples" value={model.training_samples.toLocaleString()} />
       </div>
     </div>
   );
@@ -217,9 +166,9 @@ function ModelCard({ model }: { model: any }) {
 
 function MetricRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between text-sm">
-      <span className="text-vardax-muted">{label}</span>
-      <span className="text-vardax-text font-medium">{value}</span>
+    <div className="detail-row">
+      <span className="detail-label">{label}</span>
+      <span className="detail-value">{value}</span>
     </div>
   );
 }
@@ -228,50 +177,35 @@ function LegendItem({ color, label }: { color: string; label: string }) {
   return (
     <div className="flex items-center gap-2">
       <div className="w-3 h-0.5 rounded" style={{ backgroundColor: color }} />
-      <span className="text-xs text-vardax-muted">{label}</span>
+      <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{label}</span>
     </div>
   );
 }
 
 function WeightBar({ label, weight, color }: { label: string; weight: number; color: string }) {
   return (
-    <div className="flex items-center gap-3">
-      <span className="text-xs text-vardax-muted w-28">{label}</span>
-      <div className="flex-1 h-2 bg-vardax-border rounded-full overflow-hidden">
-        <div
-          className="h-full rounded-full"
-          style={{ width: `${weight * 100}%`, backgroundColor: color }}
-        />
+    <div className="score-bar">
+      <span className="score-label">{label}</span>
+      <div className="score-track">
+        <div className="score-fill" style={{ width: `${weight * 100}%`, backgroundColor: color }} />
       </div>
-      <span className="text-xs text-vardax-text w-10 text-right">
-        {(weight * 100).toFixed(0)}%
-      </span>
+      <span className="score-value">{(weight * 100).toFixed(0)}%</span>
     </div>
   );
 }
 
-function MetricCard({
-  title,
-  value,
-  subtitle,
-  status,
-}: {
-  title: string;
-  value: string;
-  subtitle: string;
-  status: 'good' | 'warning' | 'bad';
-}) {
+function MetricCard({ title, value, subtitle, status }: { title: string; value: string; subtitle: string; status: 'good' | 'warning' | 'bad' }) {
   const statusColors = {
-    good: 'text-severity-normal',
-    warning: 'text-severity-medium',
-    bad: 'text-severity-high',
+    good: 'var(--accent-green)',
+    warning: 'var(--accent-yellow)',
+    bad: 'var(--accent-red)',
   };
   
   return (
-    <div className="bg-vardax-card rounded-lg p-4 border border-vardax-border">
-      <div className="text-sm text-vardax-muted mb-1">{title}</div>
-      <div className={clsx('text-2xl font-bold', statusColors[status])}>{value}</div>
-      <div className="text-xs text-vardax-muted mt-1">{subtitle}</div>
+    <div className={`stat-card ${status === 'good' ? 'success' : status === 'warning' ? 'warning' : 'critical'}`}>
+      <div className="stat-label">{title}</div>
+      <div className="stat-value" style={{ color: statusColors[status], fontSize: '24px' }}>{value}</div>
+      <div className="stat-subtitle">{subtitle}</div>
     </div>
   );
 }

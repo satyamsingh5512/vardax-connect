@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import './styles/dashboard.css';
 
 @tailwind base;
 @tailwind components;
@@ -9,9 +10,12 @@
     @apply border-slate-800;
   }
   body {
-    @apply bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 text-slate-100;
+    background: #0a0e14;
+    color: #f0f6fc;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   
   code, pre {

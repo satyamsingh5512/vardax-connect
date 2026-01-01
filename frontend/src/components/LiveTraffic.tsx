@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { api } from '../api';
-import clsx from 'clsx';
 
 interface TrafficEvent {
   request_id: string;
@@ -28,7 +27,6 @@ export function LiveTraffic() {
   const containerRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
 
-  // Connect to live traffic WebSocket
   useEffect(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/api/v1/ws/traffic`;
@@ -64,8 +62,6 @@ export function LiveTraffic() {
     };
 
     connect();
-
-    // Load initial data
     loadRecentTraffic();
 
     return () => {
@@ -94,7 +90,6 @@ export function LiveTraffic() {
       }));
       setEvents(mapped);
     } catch (e) {
-      // Generate mock data for demo
       setEvents(generateMockTraffic(50));
     }
   };
@@ -105,74 +100,63 @@ export function LiveTraffic() {
     return true;
   });
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'critical': return 'text-red-500 bg-red-500/10';
-      case 'high': return 'text-red-400 bg-red-400/10';
-      case 'medium': return 'text-amber-400 bg-amber-400/10';
-      case 'low': return 'text-yellow-400 bg-yellow-400/10';
-      default: return 'text-green-400 bg-green-400/10';
-    }
-  };
-
   const getMethodColor = (method: string) => {
     switch (method) {
-      case 'GET': return 'text-blue-400';
-      case 'POST': return 'text-green-400';
-      case 'PUT': return 'text-amber-400';
-      case 'DELETE': return 'text-red-400';
-      default: return 'text-gray-400';
+      case 'GET': return 'var(--accent-blue)';
+      case 'POST': return 'var(--accent-green)';
+      case 'PUT': return 'var(--accent-yellow)';
+      case 'DELETE': return 'var(--accent-red)';
+      default: return 'var(--text-tertiary)';
     }
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col" style={{ background: 'var(--bg-primary)' }}>
       {/* Header with live stats */}
-      <div className="bg-vardax-card border-b border-vardax-border p-4">
+      <div className="p-4" style={{ background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-primary)' }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-              <span className={clsx(
-                'w-2 h-2 rounded-full',
-                isPaused ? 'bg-amber-500' : 'bg-green-500 animate-pulse'
-              )} />
+            <h2 className="text-lg font-semibold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+              <span 
+                className="w-2 h-2 rounded-full"
+                style={{ 
+                  backgroundColor: isPaused ? 'var(--accent-yellow)' : 'var(--accent-green)',
+                  boxShadow: isPaused ? 'none' : '0 0 8px var(--accent-green)',
+                  animation: isPaused ? 'none' : 'pulse 2s ease-in-out infinite'
+                }}
+              />
               Live Traffic Stream
             </h2>
             
             {/* Live counters */}
             <div className="flex items-center gap-6 ml-6">
-              <div className="text-center">
-                <div className="text-xl font-bold text-white">{stats.rps}</div>
-                <div className="text-xs text-vardax-muted">req/sec</div>
+              <div className="header-stat">
+                <div className="header-stat-value" style={{ fontSize: '20px' }}>{stats.rps}</div>
+                <div className="header-stat-label">req/sec</div>
               </div>
-              <div className="text-center">
-                <div className="text-xl font-bold text-green-400">{stats.total}</div>
-                <div className="text-xs text-vardax-muted">total</div>
+              <div className="header-stat">
+                <div className="header-stat-value" style={{ fontSize: '20px', color: 'var(--accent-green)' }}>{stats.total}</div>
+                <div className="header-stat-label">total</div>
               </div>
-              <div className="text-center">
-                <div className="text-xl font-bold text-amber-400">{stats.anomalies}</div>
-                <div className="text-xs text-vardax-muted">anomalies</div>
+              <div className="header-stat">
+                <div className="header-stat-value" style={{ fontSize: '20px', color: 'var(--accent-yellow)' }}>{stats.anomalies}</div>
+                <div className="header-stat-label">anomalies</div>
               </div>
-              <div className="text-center">
-                <div className="text-xl font-bold text-red-400">{stats.blocked}</div>
-                <div className="text-xs text-vardax-muted">blocked</div>
+              <div className="header-stat">
+                <div className="header-stat-value" style={{ fontSize: '20px', color: 'var(--accent-red)' }}>{stats.blocked}</div>
+                <div className="header-stat-label">blocked</div>
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
             {/* Filter buttons */}
-            <div className="flex bg-vardax-bg rounded-lg p-1">
+            <div className="filter-group">
               {(['all', 'anomalies', 'blocked'] as const).map((f) => (
                 <button
                   key={f}
                   onClick={() => setFilter(f)}
-                  className={clsx(
-                    'px-3 py-1 text-sm rounded-md transition-colors',
-                    filter === f
-                      ? 'bg-blue-600 text-white'
-                      : 'text-vardax-muted hover:text-white'
-                  )}
+                  className={`filter-pill ${filter === f ? 'active' : ''}`}
                 >
                   {f.charAt(0).toUpperCase() + f.slice(1)}
                 </button>
@@ -182,12 +166,8 @@ export function LiveTraffic() {
             {/* Pause/Resume */}
             <button
               onClick={() => setIsPaused(!isPaused)}
-              className={clsx(
-                'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
-                isPaused
-                  ? 'bg-green-600 hover:bg-green-700 text-white'
-                  : 'bg-amber-600 hover:bg-amber-700 text-white'
-              )}
+              className={`btn ${isPaused ? 'btn-success' : 'btn-ghost'}`}
+              style={isPaused ? {} : { borderColor: 'var(--accent-yellow)', color: 'var(--accent-yellow)' }}
             >
               {isPaused ? '▶ Resume' : '⏸ Pause'}
             </button>
@@ -195,7 +175,7 @@ export function LiveTraffic() {
             {/* Clear */}
             <button
               onClick={() => setEvents([])}
-              className="px-4 py-2 bg-vardax-border hover:bg-vardax-card rounded-lg text-sm text-vardax-muted"
+              className="btn btn-ghost"
             >
               Clear
             </button>
@@ -206,17 +186,17 @@ export function LiveTraffic() {
       {/* Traffic table */}
       <div className="flex-1 flex overflow-hidden">
         <div className="flex-1 overflow-auto" ref={containerRef}>
-          <table className="w-full text-sm">
-            <thead className="bg-vardax-card sticky top-0 z-10">
-              <tr className="text-left text-vardax-muted border-b border-vardax-border">
-                <th className="px-4 py-3 w-24">Time</th>
-                <th className="px-4 py-3 w-16">Method</th>
-                <th className="px-4 py-3">URI</th>
-                <th className="px-4 py-3 w-32">Client IP</th>
-                <th className="px-4 py-3 w-20">Status</th>
-                <th className="px-4 py-3 w-20">Latency</th>
-                <th className="px-4 py-3 w-24">ML Score</th>
-                <th className="px-4 py-3 w-24">Severity</th>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th style={{ width: '96px' }}>Time</th>
+                <th style={{ width: '64px' }}>Method</th>
+                <th>URI</th>
+                <th style={{ width: '128px' }}>Client IP</th>
+                <th style={{ width: '80px' }}>Status</th>
+                <th style={{ width: '80px' }}>Latency</th>
+                <th style={{ width: '96px' }}>ML Score</th>
+                <th style={{ width: '96px' }}>Severity</th>
               </tr>
             </thead>
             <tbody>
@@ -224,55 +204,45 @@ export function LiveTraffic() {
                 <tr
                   key={event.request_id + idx}
                   onClick={() => setSelectedEvent(event)}
-                  className={clsx(
-                    'border-b border-vardax-border/50 cursor-pointer transition-colors',
-                    event.is_anomaly ? 'bg-red-500/5' : 'hover:bg-vardax-card/50',
-                    selectedEvent?.request_id === event.request_id && 'bg-blue-500/10'
-                  )}
+                  className={`cursor-pointer ${event.is_anomaly ? 'anomaly' : ''} ${selectedEvent?.request_id === event.request_id ? 'selected' : ''}`}
                 >
-                  <td className="px-4 py-2 text-vardax-muted font-mono text-xs">
+                  <td className="font-mono text-xs" style={{ color: 'var(--text-tertiary)' }}>
                     {new Date(event.timestamp).toLocaleTimeString()}
                   </td>
-                  <td className={clsx('px-4 py-2 font-mono font-medium', getMethodColor(event.method))}>
+                  <td className="font-mono font-medium" style={{ color: getMethodColor(event.method) }}>
                     {event.method}
                   </td>
-                  <td className="px-4 py-2 text-white truncate max-w-xs" title={event.uri}>
+                  <td className="truncate max-w-xs" style={{ color: 'var(--text-primary)' }} title={event.uri}>
                     {event.uri}
                   </td>
-                  <td className="px-4 py-2 text-vardax-muted font-mono">
+                  <td className="font-mono" style={{ color: 'var(--text-tertiary)' }}>
                     {event.client_ip}
                   </td>
-                  <td className={clsx(
-                    'px-4 py-2 font-mono',
-                    event.status_code >= 400 ? 'text-red-400' : 'text-green-400'
-                  )}>
+                  <td className="font-mono" style={{ color: event.status_code >= 400 ? 'var(--accent-red)' : 'var(--accent-green)' }}>
                     {event.status_code}
                   </td>
-                  <td className="px-4 py-2 text-vardax-muted">
+                  <td style={{ color: 'var(--text-tertiary)' }}>
                     {event.response_time_ms.toFixed(1)}ms
                   </td>
-                  <td className="px-4 py-2">
+                  <td>
                     <div className="flex items-center gap-2">
-                      <div className="w-16 h-1.5 bg-vardax-border rounded-full overflow-hidden">
+                      <div className="progress-bar w-16">
                         <div
-                          className={clsx(
-                            'h-full rounded-full',
-                            event.anomaly_score > 0.7 ? 'bg-red-500' :
-                            event.anomaly_score > 0.4 ? 'bg-amber-500' : 'bg-green-500'
-                          )}
+                          className={`progress-fill ${
+                            event.anomaly_score > 0.7 ? 'red' :
+                            event.anomaly_score > 0.4 ? 'yellow' : 'green'
+                          }`}
                           style={{ width: `${event.anomaly_score * 100}%` }}
                         />
                       </div>
-                      <span className="text-xs text-vardax-muted">
+                      <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
                         {(event.anomaly_score * 100).toFixed(0)}%
                       </span>
                     </div>
                   </td>
-                  <td className="px-4 py-2">
-                    <span className={clsx(
-                      'px-2 py-0.5 rounded text-xs font-medium',
-                      getSeverityColor(event.severity)
-                    )}>
+                  <td>
+                    <span className={`severity-badge ${event.severity}`}>
+                      <span className={`severity-dot ${event.severity}`} />
                       {event.severity.toUpperCase()}
                     </span>
                   </td>
@@ -282,124 +252,116 @@ export function LiveTraffic() {
           </table>
 
           {filteredEvents.length === 0 && (
-            <div className="flex items-center justify-center h-64 text-vardax-muted">
-              {isPaused ? 'Stream paused' : 'Waiting for traffic...'}
+            <div className="empty-state h-64">
+              <div className="empty-state-icon">{isPaused ? '⏸' : '📡'}</div>
+              <div className="empty-state-text">{isPaused ? 'Stream paused' : 'Waiting for traffic...'}</div>
             </div>
           )}
         </div>
 
         {/* Detail panel */}
         {selectedEvent && (
-          <div className="w-96 border-l border-vardax-border bg-vardax-card overflow-auto">
-            <div className="p-4 border-b border-vardax-border flex items-center justify-between">
-              <h3 className="font-semibold text-white">Request Details</h3>
-              <button
-                onClick={() => setSelectedEvent(null)}
-                className="text-vardax-muted hover:text-white"
-              >
-                ✕
-              </button>
+          <div className="detail-panel animate-slide-in">
+            <div className="detail-header">
+              <h3 className="detail-title">Request Details</h3>
+              <button onClick={() => setSelectedEvent(null)} className="detail-close">✕</button>
             </div>
             
-            <div className="p-4 space-y-4">
+            <div className="detail-body space-y-4">
               {/* Request info */}
-              <div>
-                <div className="text-xs text-vardax-muted mb-1">Request</div>
-                <div className="bg-vardax-bg rounded p-3 font-mono text-sm">
-                  <span className={getMethodColor(selectedEvent.method)}>{selectedEvent.method}</span>
-                  <span className="text-white ml-2">{selectedEvent.uri}</span>
+              <div className="detail-section">
+                <div className="detail-section-title">Request</div>
+                <div className="p-3 rounded font-mono text-sm" style={{ background: 'var(--bg-tertiary)' }}>
+                  <span style={{ color: getMethodColor(selectedEvent.method) }}>{selectedEvent.method}</span>
+                  <span className="ml-2" style={{ color: 'var(--text-primary)' }}>{selectedEvent.uri}</span>
                 </div>
               </div>
 
               {/* Client info */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <div className="text-xs text-vardax-muted mb-1">Client IP</div>
-                  <div className="text-white font-mono">{selectedEvent.client_ip}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-vardax-muted mb-1">Country</div>
-                  <div className="text-white">{selectedEvent.country || 'Unknown'}</div>
+              <div className="detail-section">
+                <div className="detail-section-title">Client</div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-xs mb-1" style={{ color: 'var(--text-tertiary)' }}>IP Address</div>
+                    <div className="font-mono" style={{ color: 'var(--text-primary)' }}>{selectedEvent.client_ip}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs mb-1" style={{ color: 'var(--text-tertiary)' }}>Country</div>
+                    <div style={{ color: 'var(--text-primary)' }}>{selectedEvent.country || 'Unknown'}</div>
+                  </div>
                 </div>
               </div>
 
               {/* Response info */}
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <div className="text-xs text-vardax-muted mb-1">Status</div>
-                  <div className={clsx(
-                    'font-mono',
-                    selectedEvent.status_code >= 400 ? 'text-red-400' : 'text-green-400'
-                  )}>
-                    {selectedEvent.status_code}
+              <div className="detail-section">
+                <div className="detail-section-title">Response</div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <div className="text-xs mb-1" style={{ color: 'var(--text-tertiary)' }}>Status</div>
+                    <div className="font-mono" style={{ color: selectedEvent.status_code >= 400 ? 'var(--accent-red)' : 'var(--accent-green)' }}>
+                      {selectedEvent.status_code}
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <div className="text-xs text-vardax-muted mb-1">Latency</div>
-                  <div className="text-white">{selectedEvent.response_time_ms.toFixed(1)}ms</div>
-                </div>
-                <div>
-                  <div className="text-xs text-vardax-muted mb-1">Size</div>
-                  <div className="text-white">{selectedEvent.content_length}B</div>
+                  <div>
+                    <div className="text-xs mb-1" style={{ color: 'var(--text-tertiary)' }}>Latency</div>
+                    <div style={{ color: 'var(--text-primary)' }}>{selectedEvent.response_time_ms.toFixed(1)}ms</div>
+                  </div>
+                  <div>
+                    <div className="text-xs mb-1" style={{ color: 'var(--text-tertiary)' }}>Size</div>
+                    <div style={{ color: 'var(--text-primary)' }}>{selectedEvent.content_length}B</div>
+                  </div>
                 </div>
               </div>
 
               {/* User Agent */}
-              <div>
-                <div className="text-xs text-vardax-muted mb-1">User Agent</div>
-                <div className="text-white text-sm break-all">{selectedEvent.user_agent}</div>
+              <div className="detail-section">
+                <div className="detail-section-title">User Agent</div>
+                <div className="text-sm break-all" style={{ color: 'var(--text-secondary)' }}>{selectedEvent.user_agent}</div>
               </div>
 
               {/* ML Analysis */}
-              <div className="border-t border-vardax-border pt-4">
-                <div className="text-xs text-vardax-muted mb-2">ML Analysis</div>
-                
-                <div className="space-y-3">
-                  <div>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="text-vardax-muted">Anomaly Score</span>
-                      <span className="text-white">{(selectedEvent.anomaly_score * 100).toFixed(1)}%</span>
+              <div className="detail-section">
+                <div className="detail-section-title">ML Analysis</div>
+                <div className="card" style={{ background: 'var(--bg-tertiary)' }}>
+                  <div className="card-body space-y-3">
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span style={{ color: 'var(--text-tertiary)' }}>Anomaly Score</span>
+                        <span style={{ color: 'var(--text-primary)' }}>{(selectedEvent.anomaly_score * 100).toFixed(1)}%</span>
+                      </div>
+                      <div className="progress-bar h-2">
+                        <div
+                          className={`progress-fill ${
+                            selectedEvent.anomaly_score > 0.7 ? 'red' :
+                            selectedEvent.anomaly_score > 0.4 ? 'yellow' : 'green'
+                          }`}
+                          style={{ width: `${selectedEvent.anomaly_score * 100}%` }}
+                        />
+                      </div>
                     </div>
-                    <div className="h-2 bg-vardax-border rounded-full overflow-hidden">
-                      <div
-                        className={clsx(
-                          'h-full rounded-full transition-all',
-                          selectedEvent.anomaly_score > 0.7 ? 'bg-red-500' :
-                          selectedEvent.anomaly_score > 0.4 ? 'bg-amber-500' : 'bg-green-500'
-                        )}
-                        style={{ width: `${selectedEvent.anomaly_score * 100}%` }}
-                      />
-                    </div>
-                  </div>
 
-                  <div className="flex justify-between">
-                    <span className="text-vardax-muted text-sm">Severity</span>
-                    <span className={clsx(
-                      'px-2 py-0.5 rounded text-xs font-medium',
-                      getSeverityColor(selectedEvent.severity)
-                    )}>
-                      {selectedEvent.severity.toUpperCase()}
-                    </span>
-                  </div>
-
-                  {selectedEvent.attack_category && (
-                    <div className="flex justify-between">
-                      <span className="text-vardax-muted text-sm">Attack Type</span>
-                      <span className="text-amber-400 text-sm">{selectedEvent.attack_category}</span>
+                    <div className="detail-row">
+                      <span className="detail-label">Severity</span>
+                      <span className={`severity-badge ${selectedEvent.severity}`}>
+                        {selectedEvent.severity.toUpperCase()}
+                      </span>
                     </div>
-                  )}
+
+                    {selectedEvent.attack_category && (
+                      <div className="detail-row">
+                        <span className="detail-label">Attack Type</span>
+                        <span style={{ color: 'var(--accent-yellow)' }}>{selectedEvent.attack_category}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
               {/* Actions */}
               {selectedEvent.is_anomaly && (
-                <div className="border-t border-vardax-border pt-4 flex gap-2">
-                  <button className="flex-1 px-3 py-2 bg-red-600 hover:bg-red-700 rounded text-sm text-white">
-                    Block IP
-                  </button>
-                  <button className="flex-1 px-3 py-2 bg-vardax-border hover:bg-vardax-card rounded text-sm text-white">
-                    False Positive
-                  </button>
+                <div className="flex gap-2">
+                  <button className="btn btn-danger flex-1">Block IP</button>
+                  <button className="btn btn-ghost flex-1">False Positive</button>
                 </div>
               )}
             </div>
@@ -410,7 +372,6 @@ export function LiveTraffic() {
   );
 }
 
-// Generate mock traffic for demo
 function generateMockTraffic(count: number): TrafficEvent[] {
   const methods = ['GET', 'POST', 'PUT', 'DELETE'];
   const uris = [

@@ -2,20 +2,20 @@ import { useState } from 'react';
 import { useDashboardStore } from '../store';
 import { api } from '../api';
 import type { RuleRecommendation, RuleStatus } from '../types';
-import clsx from 'clsx';
 import { format } from 'date-fns';
 
-const statusColors: Record<RuleStatus, string> = {
-  pending: 'bg-severity-medium/20 text-severity-medium border-severity-medium/30',
-  approved: 'bg-severity-normal/20 text-severity-normal border-severity-normal/30',
-  rejected: 'bg-vardax-muted/20 text-vardax-muted border-vardax-muted/30',
-  rolled_back: 'bg-severity-high/20 text-severity-high border-severity-high/30',
+const statusStyles: Record<RuleStatus, { bg: string; color: string; border: string }> = {
+  pending: { bg: 'rgba(255, 165, 2, 0.15)', color: 'var(--severity-medium)', border: 'rgba(255, 165, 2, 0.3)' },
+  approved: { bg: 'rgba(46, 213, 115, 0.15)', color: 'var(--severity-low)', border: 'rgba(46, 213, 115, 0.3)' },
+  rejected: { bg: 'rgba(139, 148, 158, 0.15)', color: 'var(--text-tertiary)', border: 'rgba(139, 148, 158, 0.3)' },
+  rolled_back: { bg: 'rgba(248, 81, 73, 0.15)', color: 'var(--accent-red)', border: 'rgba(248, 81, 73, 0.3)' },
 };
 
 export function RuleApproval() {
   const { pendingRules, setPendingRules, updateRuleStatus } = useDashboardStore();
   const [selectedRule, setSelectedRule] = useState<RuleRecommendation | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'rejected'>('pending');
   
   const handleGenerateRules = async () => {
     setIsGenerating(true);
@@ -50,47 +50,73 @@ export function RuleApproval() {
   const approved = pendingRules.filter(r => r.status === 'approved');
   const rejected = pendingRules.filter(r => r.status === 'rejected');
   
+  const displayRules = activeTab === 'pending' ? pending : activeTab === 'approved' ? approved : rejected;
+  
   return (
-    <div className="flex h-full">
+    <div className="flex h-full" style={{ background: 'var(--bg-primary)' }}>
       {/* Rule List */}
-      <div className={clsx(
-        'flex-1 flex flex-col',
-        selectedRule ? 'border-r border-vardax-border' : ''
-      )}>
+      <div 
+        className={`flex-1 flex flex-col ${selectedRule ? 'border-r' : ''}`}
+        style={{ borderColor: 'var(--border-primary)' }}
+      >
         {/* Header */}
-        <div className="p-4 border-b border-vardax-border flex items-center justify-between">
+        <div className="p-4 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border-primary)' }}>
           <div>
-            <h2 className="font-medium text-white">Rule Recommendations</h2>
-            <p className="text-sm text-vardax-muted">
+            <h2 className="font-semibold" style={{ color: 'var(--text-primary)' }}>Rule Recommendations</h2>
+            <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
               ML-generated rules require human approval before deployment
             </p>
           </div>
           <button
             onClick={handleGenerateRules}
             disabled={isGenerating}
-            className="px-4 py-2 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 disabled:opacity-50"
+            className="btn btn-primary"
           >
             {isGenerating ? 'Generating...' : 'Generate Rules'}
           </button>
         </div>
         
         {/* Tabs */}
-        <div className="flex border-b border-vardax-border">
-          <TabButton label={`Pending (${pending.length})`} active count={pending.length} />
-          <TabButton label={`Approved (${approved.length})`} count={approved.length} />
-          <TabButton label={`Rejected (${rejected.length})`} count={rejected.length} />
+        <div className="dashboard-nav" style={{ padding: '0 16px' }}>
+          <div className="nav-tabs">
+            <button 
+              className={`nav-tab ${activeTab === 'pending' ? 'active' : ''}`}
+              onClick={() => setActiveTab('pending')}
+            >
+              Pending
+              {pending.length > 0 && <span className="nav-badge">{pending.length}</span>}
+            </button>
+            <button 
+              className={`nav-tab ${activeTab === 'approved' ? 'active' : ''}`}
+              onClick={() => setActiveTab('approved')}
+            >
+              Approved ({approved.length})
+            </button>
+            <button 
+              className={`nav-tab ${activeTab === 'rejected' ? 'active' : ''}`}
+              onClick={() => setActiveTab('rejected')}
+            >
+              Rejected ({rejected.length})
+            </button>
+          </div>
         </div>
         
         {/* Rule Cards */}
         <div className="flex-1 overflow-auto p-4 space-y-4">
-          {pending.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64 text-vardax-muted">
-              <div className="text-4xl mb-4">📋</div>
-              <div>No pending rules</div>
-              <div className="text-sm">Generate rules from recent anomalies</div>
+          {displayRules.length === 0 ? (
+            <div className="empty-state h-64">
+              <div className="empty-state-icon">📋</div>
+              <div className="empty-state-text">
+                {activeTab === 'pending' ? 'No pending rules' : `No ${activeTab} rules`}
+              </div>
+              {activeTab === 'pending' && (
+                <p className="text-sm mt-2" style={{ color: 'var(--text-tertiary)' }}>
+                  Generate rules from recent anomalies
+                </p>
+              )}
             </div>
           ) : (
-            pending.map((rule) => (
+            displayRules.map((rule) => (
               <RuleCard
                 key={rule.rule_id}
                 rule={rule}
@@ -117,21 +143,6 @@ export function RuleApproval() {
   );
 }
 
-function TabButton({ label, active, count }: { label: string; active?: boolean; count: number }) {
-  return (
-    <button
-      className={clsx(
-        'px-4 py-2 text-sm border-b-2 transition-colors',
-        active
-          ? 'border-blue-500 text-blue-400'
-          : 'border-transparent text-vardax-muted hover:text-white'
-      )}
-    >
-      {label}
-    </button>
-  );
-}
-
 function RuleCard({
   rule,
   onSelect,
@@ -145,62 +156,57 @@ function RuleCard({
   onReject: () => void;
   isSelected: boolean;
 }) {
+  const style = statusStyles[rule.status];
+  
   return (
     <div
-      className={clsx(
-        'bg-vardax-card rounded-lg border p-4 cursor-pointer transition-colors',
-        isSelected ? 'border-blue-500' : 'border-vardax-border hover:border-vardax-muted'
-      )}
+      className="card cursor-pointer transition-all"
+      style={{ 
+        borderColor: isSelected ? 'var(--accent-blue)' : 'var(--border-primary)',
+        boxShadow: isSelected ? 'var(--shadow-glow-blue)' : 'none'
+      }}
       onClick={onSelect}
     >
-      <div className="flex items-start justify-between mb-3">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className={clsx(
-              'px-2 py-0.5 text-xs rounded border',
-              statusColors[rule.status]
-            )}>
-              {rule.status.toUpperCase()}
-            </span>
-            <span className="text-xs text-vardax-muted">
-              {rule.rule_type.replace('_', ' ')}
-            </span>
+      <div className="card-body">
+        <div className="flex items-start justify-between mb-3">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span 
+                className="px-2 py-0.5 text-xs rounded"
+                style={{ background: style.bg, color: style.color, border: `1px solid ${style.border}` }}
+              >
+                {rule.status.toUpperCase()}
+              </span>
+              <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                {rule.rule_type.replace('_', ' ')}
+              </span>
+            </div>
+            <h3 className="font-medium" style={{ color: 'var(--text-primary)' }}>{rule.rule_description}</h3>
           </div>
-          <h3 className="font-medium text-white">{rule.rule_description}</h3>
-        </div>
-        <div className="text-right">
-          <div className="text-sm font-medium text-white">
-            {(rule.confidence * 100).toFixed(0)}%
+          <div className="text-right">
+            <div className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+              {(rule.confidence * 100).toFixed(0)}%
+            </div>
+            <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>confidence</div>
           </div>
-          <div className="text-xs text-vardax-muted">confidence</div>
         </div>
+        
+        <div className="flex items-center justify-between text-sm" style={{ color: 'var(--text-tertiary)' }}>
+          <div>Based on {rule.anomaly_count} anomalies</div>
+          <div>Est. FP rate: {(rule.false_positive_estimate * 100).toFixed(1)}%</div>
+        </div>
+        
+        {rule.status === 'pending' && (
+          <div className="flex gap-2 mt-4" onClick={(e) => e.stopPropagation()}>
+            <button onClick={onApprove} className="btn btn-success flex-1 btn-sm">
+              ✓ Approve & Deploy
+            </button>
+            <button onClick={onReject} className="btn btn-ghost flex-1 btn-sm">
+              ✕ Reject
+            </button>
+          </div>
+        )}
       </div>
-      
-      <div className="flex items-center justify-between text-sm">
-        <div className="text-vardax-muted">
-          Based on {rule.anomaly_count} anomalies
-        </div>
-        <div className="text-vardax-muted">
-          Est. FP rate: {(rule.false_positive_estimate * 100).toFixed(1)}%
-        </div>
-      </div>
-      
-      {rule.status === 'pending' && (
-        <div className="flex gap-2 mt-4" onClick={(e) => e.stopPropagation()}>
-          <button
-            onClick={onApprove}
-            className="flex-1 px-3 py-2 text-sm bg-severity-normal/20 text-severity-normal border border-severity-normal/30 rounded hover:bg-severity-normal/30"
-          >
-            ✓ Approve & Deploy
-          </button>
-          <button
-            onClick={onReject}
-            className="flex-1 px-3 py-2 text-sm bg-vardax-border text-vardax-muted border border-vardax-border rounded hover:bg-vardax-muted/20"
-          >
-            ✕ Reject
-          </button>
-        </div>
-      )}
     </div>
   );
 }
@@ -216,76 +222,83 @@ function RuleDetail({
   onApprove: () => void;
   onReject: () => void;
 }) {
+  const style = statusStyles[rule.status];
+  
   return (
-    <div className="w-[500px] flex flex-col bg-vardax-bg">
+    <div className="detail-panel animate-slide-in" style={{ width: '500px' }}>
       {/* Header */}
-      <div className="p-4 border-b border-vardax-border flex items-center justify-between">
-        <h3 className="font-medium text-white">Rule Details</h3>
-        <button
-          onClick={onClose}
-          className="text-vardax-muted hover:text-white"
-        >
-          ✕
-        </button>
+      <div className="detail-header">
+        <h3 className="detail-title">Rule Details</h3>
+        <button onClick={onClose} className="detail-close">✕</button>
       </div>
       
       {/* Content */}
-      <div className="flex-1 overflow-auto p-4 space-y-4">
+      <div className="detail-body space-y-4">
         {/* Status & Confidence */}
         <div className="flex items-center gap-3">
-          <span className={clsx(
-            'px-3 py-1 text-sm rounded border',
-            statusColors[rule.status]
-          )}>
+          <span 
+            className="px-3 py-1 text-sm rounded"
+            style={{ background: style.bg, color: style.color, border: `1px solid ${style.border}` }}
+          >
             {rule.status.toUpperCase()}
           </span>
-          <span className="text-sm text-vardax-muted">
+          <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
             {(rule.confidence * 100).toFixed(0)}% confidence
           </span>
         </div>
         
         {/* Description */}
-        <div>
-          <h4 className="text-xs font-medium text-vardax-muted mb-1">Description</h4>
-          <p className="text-sm text-vardax-text">{rule.rule_description}</p>
+        <div className="detail-section">
+          <h4 className="detail-section-title">Description</h4>
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{rule.rule_description}</p>
         </div>
         
         {/* Metadata */}
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <span className="text-vardax-muted">Rule Type</span>
-            <div className="text-vardax-text">{rule.rule_type.replace('_', ' ')}</div>
-          </div>
-          <div>
-            <span className="text-vardax-muted">Source Anomalies</span>
-            <div className="text-vardax-text">{rule.anomaly_count}</div>
-          </div>
-          <div>
-            <span className="text-vardax-muted">Est. False Positive Rate</span>
-            <div className="text-vardax-text">{(rule.false_positive_estimate * 100).toFixed(1)}%</div>
-          </div>
-          <div>
-            <span className="text-vardax-muted">Created</span>
-            <div className="text-vardax-text">
-              {format(new Date(rule.created_at), 'PPp')}
+        <div className="detail-section">
+          <h4 className="detail-section-title">Metadata</h4>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <div className="text-xs mb-1" style={{ color: 'var(--text-tertiary)' }}>Rule Type</div>
+              <div style={{ color: 'var(--text-secondary)' }}>{rule.rule_type.replace('_', ' ')}</div>
+            </div>
+            <div>
+              <div className="text-xs mb-1" style={{ color: 'var(--text-tertiary)' }}>Source Anomalies</div>
+              <div style={{ color: 'var(--text-secondary)' }}>{rule.anomaly_count}</div>
+            </div>
+            <div>
+              <div className="text-xs mb-1" style={{ color: 'var(--text-tertiary)' }}>Est. False Positive Rate</div>
+              <div style={{ color: 'var(--text-secondary)' }}>{(rule.false_positive_estimate * 100).toFixed(1)}%</div>
+            </div>
+            <div>
+              <div className="text-xs mb-1" style={{ color: 'var(--text-tertiary)' }}>Created</div>
+              <div style={{ color: 'var(--text-secondary)' }}>{format(new Date(rule.created_at), 'PPp')}</div>
             </div>
           </div>
         </div>
         
         {/* Rule Content */}
-        <div>
-          <h4 className="text-xs font-medium text-vardax-muted mb-2">ModSecurity Rule</h4>
-          <pre className="bg-vardax-card rounded-lg p-4 border border-vardax-border text-xs text-vardax-text overflow-x-auto">
+        <div className="detail-section">
+          <h4 className="detail-section-title">ModSecurity Rule</h4>
+          <pre 
+            className="p-4 rounded-lg text-xs overflow-x-auto font-mono"
+            style={{ background: 'var(--bg-tertiary)', color: 'var(--accent-cyan)', border: '1px solid var(--border-primary)' }}
+          >
             {rule.rule_content}
           </pre>
         </div>
         
         {/* Warning */}
-        <div className="bg-severity-medium/10 border border-severity-medium/30 rounded-lg p-3">
+        <div 
+          className="p-3 rounded-lg"
+          style={{ 
+            background: 'rgba(255, 165, 2, 0.1)',
+            border: '1px solid rgba(255, 165, 2, 0.3)'
+          }}
+        >
           <div className="flex items-start gap-2">
-            <span className="text-severity-medium">⚠️</span>
-            <div className="text-sm text-severity-medium">
-              <strong>Review carefully before approving.</strong> This rule will be deployed to your WAF and may block legitimate traffic if the false positive estimate is incorrect.
+            <span style={{ color: 'var(--accent-yellow)' }}>⚠️</span>
+            <div className="text-sm" style={{ color: 'var(--accent-yellow)' }}>
+              <strong>Review carefully before approving.</strong> This rule will be deployed to your WAF and may block legitimate traffic.
             </div>
           </div>
         </div>
@@ -293,16 +306,10 @@ function RuleDetail({
         {/* Actions */}
         {rule.status === 'pending' && (
           <div className="flex gap-2">
-            <button
-              onClick={onApprove}
-              className="flex-1 px-4 py-2 bg-severity-normal text-white rounded hover:bg-severity-normal/80"
-            >
+            <button onClick={onApprove} className="btn btn-success flex-1">
               ✓ Approve & Deploy
             </button>
-            <button
-              onClick={onReject}
-              className="flex-1 px-4 py-2 bg-vardax-border text-vardax-text rounded hover:bg-vardax-muted/20"
-            >
+            <button onClick={onReject} className="btn btn-ghost flex-1">
               ✕ Reject
             </button>
           </div>

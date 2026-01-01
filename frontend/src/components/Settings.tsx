@@ -63,63 +63,83 @@ export function Settings() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <h2 className="text-xl font-semibold text-white">Settings & Database</h2>
+    <div className="p-6 space-y-6 overflow-auto h-full" style={{ background: 'var(--bg-primary)' }}>
+      <h2 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>Settings & Database</h2>
       
       {message && (
-        <div className={`p-4 rounded-lg ${message.type === 'success' ? 'bg-green-900/50 text-green-300' : 'bg-red-900/50 text-red-300'}`}>
-          {message.text}
-          <button onClick={() => setMessage(null)} className="ml-4 text-sm underline">Dismiss</button>
+        <div 
+          className="p-4 rounded-lg flex items-center justify-between"
+          style={{ 
+            background: message.type === 'success' ? 'rgba(63, 185, 80, 0.15)' : 'rgba(248, 81, 73, 0.15)',
+            border: `1px solid ${message.type === 'success' ? 'rgba(63, 185, 80, 0.3)' : 'rgba(248, 81, 73, 0.3)'}`,
+            color: message.type === 'success' ? 'var(--accent-green)' : 'var(--accent-red)'
+          }}
+        >
+          <span>{message.text}</span>
+          <button onClick={() => setMessage(null)} className="text-sm underline opacity-70 hover:opacity-100">Dismiss</button>
         </div>
       )}
 
       {/* Database Stats */}
-      <div className="bg-vardax-card rounded-lg border border-vardax-border p-6">
-        <h3 className="text-lg font-medium text-white mb-4">Database Statistics</h3>
-        
-        {stats ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <StatCard label="Traffic Events" value={stats.traffic_events} />
-            <StatCard label="Anomalies (DB)" value={stats.anomalies} />
-            <StatCard label="Rules (DB)" value={stats.rules} />
-            <StatCard label="Feedback Records" value={stats.feedback} />
-            <StatCard label="Anomalies (Memory)" value={stats.in_memory_anomalies} />
-            <StatCard label="Rules (Memory)" value={stats.in_memory_rules} />
-            <StatCard label="WebSocket Connections" value={stats.ws_connections} />
-          </div>
-        ) : (
-          <p className="text-vardax-muted">Loading stats...</p>
-        )}
+      <div className="card">
+        <div className="card-header">
+          <h3 className="card-title">Database Statistics</h3>
+        </div>
+        <div className="card-body">
+          {stats ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <StatCard label="Traffic Events" value={stats.traffic_events} />
+              <StatCard label="Anomalies (DB)" value={stats.anomalies} />
+              <StatCard label="Rules (DB)" value={stats.rules} />
+              <StatCard label="Feedback Records" value={stats.feedback} />
+              <StatCard label="Anomalies (Memory)" value={stats.in_memory_anomalies} />
+              <StatCard label="Rules (Memory)" value={stats.in_memory_rules} />
+              <StatCard label="WebSocket Connections" value={stats.ws_connections} />
+            </div>
+          ) : (
+            <p style={{ color: 'var(--text-tertiary)' }}>Loading stats...</p>
+          )}
+        </div>
       </div>
 
       {/* Data Management */}
-      <div className="bg-vardax-card rounded-lg border border-vardax-border p-6">
-        <h3 className="text-lg font-medium text-white mb-4">Data Management</h3>
-        
-        <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 bg-vardax-bg rounded-lg">
+      <div className="card">
+        <div className="card-header">
+          <h3 className="card-title">Data Management</h3>
+        </div>
+        <div className="card-body space-y-4">
+          <div 
+            className="flex items-center justify-between p-4 rounded-lg"
+            style={{ background: 'var(--bg-tertiary)' }}
+          >
             <div>
-              <p className="text-white font-medium">Load from Database</p>
-              <p className="text-sm text-vardax-muted">Restore anomalies and rules from database into memory cache</p>
+              <p className="font-medium" style={{ color: 'var(--text-primary)' }}>Load from Database</p>
+              <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Restore anomalies and rules from database into memory cache</p>
             </div>
             <button
               onClick={handleLoadFromDb}
               disabled={loading}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50"
+              className="btn btn-primary"
             >
               {loading ? 'Loading...' : 'Load Data'}
             </button>
           </div>
 
-          <div className="flex items-center justify-between p-4 bg-red-900/20 border border-red-800 rounded-lg">
+          <div 
+            className="flex items-center justify-between p-4 rounded-lg"
+            style={{ 
+              background: 'rgba(248, 81, 73, 0.1)',
+              border: '1px solid rgba(248, 81, 73, 0.3)'
+            }}
+          >
             <div>
-              <p className="text-white font-medium">Clear All Data</p>
-              <p className="text-sm text-red-400">Permanently delete all anomalies, rules, events, and feedback</p>
+              <p className="font-medium" style={{ color: 'var(--text-primary)' }}>Clear All Data</p>
+              <p className="text-sm" style={{ color: 'var(--accent-red)' }}>Permanently delete all anomalies, rules, events, and feedback</p>
             </div>
             <button
               onClick={handleClearData}
               disabled={loading}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg disabled:opacity-50"
+              className="btn btn-danger"
             >
               {loading ? 'Clearing...' : 'Clear All'}
             </button>
@@ -128,22 +148,31 @@ export function Settings() {
       </div>
 
       {/* Database Configuration */}
-      <div className="bg-vardax-card rounded-lg border border-vardax-border p-6">
-        <h3 className="text-lg font-medium text-white mb-4">Database Configuration</h3>
-        
-        <div className="space-y-3 text-sm">
-          <div className="flex justify-between">
-            <span className="text-vardax-muted">Database Type:</span>
-            <span className="text-white">SQLite (default)</span>
+      <div className="card">
+        <div className="card-header">
+          <h3 className="card-title">Database Configuration</h3>
+        </div>
+        <div className="card-body space-y-3 text-sm">
+          <div className="detail-row">
+            <span className="detail-label">Database Type</span>
+            <span className="detail-value">SQLite (default)</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-vardax-muted">Location:</span>
-            <span className="text-white font-mono">./vardax.db</span>
+          <div className="detail-row">
+            <span className="detail-label">Location</span>
+            <span className="detail-value font-mono">./vardax.db</span>
           </div>
-          <div className="mt-4 p-3 bg-vardax-bg rounded text-vardax-muted">
-            <p className="font-medium text-white mb-2">PostgreSQL Configuration</p>
-            <p>Set <code className="bg-black/30 px-1 rounded">VARDAX_DATABASE_URL</code> environment variable:</p>
-            <code className="block mt-2 text-xs bg-black/30 p-2 rounded">
+          <div 
+            className="mt-4 p-4 rounded-lg"
+            style={{ background: 'var(--bg-tertiary)' }}
+          >
+            <p className="font-medium mb-2" style={{ color: 'var(--text-primary)' }}>PostgreSQL Configuration</p>
+            <p style={{ color: 'var(--text-tertiary)' }}>
+              Set <code className="px-1 rounded" style={{ background: 'var(--bg-primary)' }}>VARDAX_DATABASE_URL</code> environment variable:
+            </p>
+            <code 
+              className="block mt-2 text-xs p-3 rounded font-mono"
+              style={{ background: 'var(--bg-primary)', color: 'var(--accent-cyan)' }}
+            >
               VARDAX_DATABASE_URL=postgresql://user:pass@host:5432/vardax
             </code>
           </div>
@@ -155,9 +184,9 @@ export function Settings() {
 
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="bg-vardax-bg p-4 rounded-lg">
-      <p className="text-vardax-muted text-sm">{label}</p>
-      <p className="text-2xl font-bold text-white">{value.toLocaleString()}</p>
+    <div className="p-4 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
+      <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>{label}</p>
+      <p className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{value.toLocaleString()}</p>
     </div>
   );
 }

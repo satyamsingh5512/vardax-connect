@@ -80,10 +80,10 @@ function App() {
     <>
       {isLoading && <LoadingScreen onLoadComplete={() => setIsLoading(false)} />}
       
-      <div className="h-screen flex flex-col bg-vardax-bg">
+      <div className="dashboard-layout">
         <Header />
         <Navigation />
-        <main className="flex-1 overflow-hidden">
+        <main className="dashboard-main">
           {activeTab === 'overview' && <Overview />}
           {activeTab === 'traffic' && <LiveTraffic />}
           {activeTab === 'anomalies' && <AnomalyList />}
@@ -91,7 +91,7 @@ function App() {
           {activeTab === 'models' && <ModelHealth />}
           {activeTab === 'replay' && <ReplayTimeline />}
           {activeTab === 'heatmap' && (
-            <div className="p-6 grid grid-cols-2 gap-6">
+            <div className="p-6 grid grid-cols-2 gap-6" style={{ background: 'var(--bg-primary)', height: '100%', overflow: 'auto' }}>
               <TrafficHeatmap />
               <GeoMap />
             </div>
