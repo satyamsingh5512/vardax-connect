@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useDashboardStore } from '../store';
 import { api } from '../api';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { ConnectedServices } from './ConnectedServices';
 
 export function Overview() {
   const { anomalies, pendingRules, modelHealth } = useDashboardStore();
@@ -184,6 +185,9 @@ export function Overview() {
       
       {/* Bottom Row */}
       <div className="grid grid-cols-3 gap-6">
+        {/* Connected Services */}
+        <ConnectedServices />
+        
         {/* Severity Distribution */}
         <div className="card">
           <div className="card-header">
@@ -233,26 +237,31 @@ export function Overview() {
             )}
           </div>
         </div>
-        
+      </div>
+      
+      {/* ML Model Status Row */}
+      <div className="grid grid-cols-1 gap-6">
         {/* Model Status */}
         <div className="card">
           <div className="card-header">
             <h3 className="card-title">ML Model Status</h3>
           </div>
-          <div className="card-body space-y-3">
-            {(modelHealth.length > 0 ? modelHealth : [
-              { model_name: 'Isolation Forest', avg_inference_time_ms: 5.2, anomaly_rate_24h: 0.02 },
-              { model_name: 'Autoencoder', avg_inference_time_ms: 12.5, anomaly_rate_24h: 0.025 },
-              { model_name: 'EWMA Baseline', avg_inference_time_ms: 0.5, anomaly_rate_24h: 0.018 },
-            ]).map((model) => (
-              <div key={model.model_name} className="flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--accent-green)' }} />
-                <span className="text-sm flex-1" style={{ color: 'var(--text-secondary)' }}>{model.model_name}</span>
-                <span className="text-xs font-mono" style={{ color: 'var(--text-tertiary)' }}>
-                  {model.avg_inference_time_ms.toFixed(1)}ms
-                </span>
-              </div>
-            ))}
+          <div className="card-body">
+            <div className="grid grid-cols-3 gap-6">
+              {(modelHealth.length > 0 ? modelHealth : [
+                { model_name: 'Isolation Forest', avg_inference_time_ms: 5.2, anomaly_rate_24h: 0.02 },
+                { model_name: 'Autoencoder', avg_inference_time_ms: 12.5, anomaly_rate_24h: 0.025 },
+                { model_name: 'EWMA Baseline', avg_inference_time_ms: 0.5, anomaly_rate_24h: 0.018 },
+              ]).map((model) => (
+                <div key={model.model_name} className="flex items-center gap-3 p-3" style={{ background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)' }}>
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--accent-green)' }} />
+                  <span className="text-sm flex-1" style={{ color: 'var(--text-secondary)' }}>{model.model_name}</span>
+                  <span className="text-xs font-mono" style={{ color: 'var(--text-tertiary)' }}>
+                    {model.avg_inference_time_ms.toFixed(1)}ms
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
           <div className="card-footer">
             <div className="flex justify-between text-sm">

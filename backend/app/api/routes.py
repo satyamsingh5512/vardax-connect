@@ -46,6 +46,7 @@ recent_anomalies: List[Dict] = []
 pending_rules: Dict[str, RuleRecommendation] = {}
 connected_websockets: List[WebSocket] = []
 traffic_websockets: List[WebSocket] = []
+connected_services: Dict[str, Dict[str, Any]] = {}  # service_id -> service info
 
 # Create routers
 router = APIRouter()
@@ -87,7 +88,113 @@ async def get_database_stats() -> Dict[str, Any]:
     stats["in_memory_anomalies"] = len(recent_anomalies)
     stats["in_memory_rules"] = len(pending_rules)
     stats["ws_connections"] = len(connected_websockets) + len(traffic_websockets)
+    stats["connected_services"] = len(connected_services)
     return stats
+
+
+# ============================================================================
+# CONNECTED SERVICES API
+# ============================================================================
+
+@router.post("/services/register", tags=["Services"])
+async def register_service(service_data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Register a service/application connecting to VARDAx.
+    Called automatically by vardax-connect middleware on startup.
+    """
+    service_id = service_data.get("service_id") or f"svc-{datetime.utcnow().timestamp()}"
+    
+    service_info = {
+        "service_id": service_id,
+        "name": service_data.get("name", "Unknown Service"),
+        "host": service_data.get("host", "unknown"),
+        "port": service_data.get("port", 0),
+        "environment": service_data.get("environment", "development"),
+        "version": service_data.get("version", "1.0.0"),
+        "framework": service_data.get("framework", "unknown"),
+        "registered_at": datetime.utcnow().isoformat(),
+        "last_heartbeat": datetime.utcnow().isoformat(),
+        "status": "online",
+        "requests_total": 0,
+        "anomalies_total": 0,
+        "mode": service_data.get("mode", "monitor")
+    }
+    
+    connected_services[service_id] = service_info
+    logger.info(f"Service registered: {service_info['name']} ({service_id})")
+    
+    # Broadcast to dashboards
+    await broadcast_service_update(service_info, "registered")
+    
+    return {"status": "registered", "service_id": service_id, "service": service_info}
+
+
+@router.post("/services/heartbeat", tags=["Services"])
+async def service_heartbeat(heartbeat_data: Dict[str, Any]) -> Dict[str, str]:
+    """
+    Receive heartbeat from connected service.
+    Updates last_seen timestamp and stats.
+    """
+    service_id = heartbeat_data.get("service_id")
+    
+    if service_id and service_id in connected_services:
+        connected_services[service_id]["last_heartbeat"] = datetime.utcnow().isoformat()
+        connected_services[service_id]["status"] = "online"
+        
+        # Update stats if provided
+        if "requests_total" in heartbeat_data:
+            connected_services[service_id]["requests_total"] = heartbeat_data["requests_total"]
+        if "anomalies_total" in heartbeat_data:
+            connected_services[service_id]["anomalies_total"] = heartbeat_data["anomalies_total"]
+        
+        return {"status": "ok"}
+    
+    return {"status": "unknown_service"}
+
+
+@router.get("/services", tags=["Services"])
+async def get_connected_services() -> List[Dict[str, Any]]:
+    """
+    Get all connected services/applications.
+    """
+    # Check for stale services (no heartbeat in 60 seconds)
+    now = datetime.utcnow()
+    for service_id, service in connected_services.items():
+        last_hb = datetime.fromisoformat(service["last_heartbeat"])
+        if (now - last_hb).total_seconds() > 60:
+            service["status"] = "offline"
+        elif (now - last_hb).total_seconds() > 30:
+            service["status"] = "degraded"
+    
+    return list(connected_services.values())
+
+
+@router.delete("/services/{service_id}", tags=["Services"])
+async def unregister_service(service_id: str) -> Dict[str, str]:
+    """
+    Unregister a service.
+    """
+    if service_id in connected_services:
+        service = connected_services.pop(service_id)
+        await broadcast_service_update(service, "unregistered")
+        return {"status": "unregistered", "service_id": service_id}
+    
+    raise HTTPException(status_code=404, detail="Service not found")
+
+
+async def broadcast_service_update(service: Dict, event_type: str):
+    """Broadcast service update to dashboards."""
+    message = json.dumps({
+        "type": "service_update",
+        "event": event_type,
+        "service": service
+    })
+    
+    for ws in connected_websockets:
+        try:
+            await ws.send_text(message)
+        except Exception:
+            pass
 
 
 @router.post("/admin/load-from-db", tags=["Admin"])
@@ -148,11 +255,19 @@ async def ingest_traffic(
     # Extract features
     features = feature_extractor.extract(request)
     
+    # Track service stats if service_id provided
+    service_id = getattr(request, 'service_id', None)
+    if service_id and service_id in connected_services:
+        connected_services[service_id]["requests_total"] = connected_services[service_id].get("requests_total", 0) + 1
+        connected_services[service_id]["last_heartbeat"] = datetime.utcnow().isoformat()
+        connected_services[service_id]["status"] = "online"
+    
     # Queue for async ML inference
     background_tasks.add_task(
         process_traffic_async,
         request,
-        features
+        features,
+        service_id
     )
     
     return {
@@ -161,7 +276,7 @@ async def ingest_traffic(
     }
 
 
-async def process_traffic_async(request: TrafficRequest, features):
+async def process_traffic_async(request: TrafficRequest, features, service_id: Optional[str] = None):
     """Background task for ML inference."""
     try:
         # Convert features to dict for ML
@@ -200,7 +315,8 @@ async def process_traffic_async(request: TrafficRequest, features):
             "severity": "normal" if not prediction.is_anomaly else result_dict["severity"],
             "attack_category": result_dict["attack_category"] if prediction.is_anomaly else None,
             "features": feature_dict,
-            "explanations": prediction.explanations
+            "explanations": prediction.explanations,
+            "service_id": service_id
         }
         db.save_traffic_event(traffic_event)
         
@@ -210,6 +326,11 @@ async def process_traffic_async(request: TrafficRequest, features):
         # If anomalous, store and notify
         if prediction.is_anomaly or prediction.ensemble_score > 0.3:
             anomaly = create_anomaly_result(request, prediction, feature_dict)
+            anomaly["service_id"] = service_id
+            
+            # Update service anomaly count
+            if service_id and service_id in connected_services:
+                connected_services[service_id]["anomalies_total"] = connected_services[service_id].get("anomalies_total", 0) + 1
             
             # Save to database
             db.save_anomaly(anomaly)

@@ -12,7 +12,7 @@ const axios = require('axios');
 
 /**
  * Parse VARDAx connection string
- * Format: vardax://host:port?apiKey=key&mode=monitor&timeout=5000
+ * Format: vardax://host:port?apiKey=key&mode=monitor&timeout=5000&serviceName=my-app
  */
 function parseConnectionString(connectionString) {
   if (!connectionString) {
@@ -40,7 +40,12 @@ function parseConnectionString(connectionString) {
       challengeThreshold: parseFloat(params.get('challengeThreshold') || '0.5'),
       debug: params.get('debug') === 'true',
       failOpen: params.get('failOpen') !== 'false', // Default true
-      customBlockPage: params.get('blockPage') || null
+      customBlockPage: params.get('blockPage') || null,
+      // Service identification
+      serviceName: params.get('serviceName') || params.get('name') || null,
+      serviceId: params.get('serviceId') || null,
+      environment: params.get('env') || params.get('environment') || 'development',
+      version: params.get('version') || '1.0.0'
     };
   } catch (error) {
     throw new Error(`Invalid VARDAx connection string: ${error.message}`);
@@ -50,7 +55,7 @@ function parseConnectionString(connectionString) {
 /**
  * Extract request features for VARDAx
  */
-function extractFeatures(req) {
+function extractFeatures(req, config) {
   const timestamp = new Date().toISOString();
   const requestId = `connect-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -71,8 +76,66 @@ function extractFeatures(req) {
     has_cookie: !!req.get('cookie'),
     body_length: req.body ? JSON.stringify(req.body).length : 0,
     origin: req.get('origin') || null,
-    host: req.get('host') || null
+    host: req.get('host') || null,
+    // Service identification
+    service_id: config.serviceId || null
   };
+}
+
+/**
+ * Register service with VARDAx
+ */
+async function registerService(config) {
+  const apiUrl = `${config.protocol}://${config.host}:${config.port}/api/v1/services/register`;
+  
+  const serviceData = {
+    service_id: config.serviceId,
+    name: config.serviceName || 'Node.js App',
+    host: require('os').hostname(),
+    port: process.env.PORT || 3000,
+    environment: config.environment,
+    version: config.version,
+    framework: 'express',
+    mode: config.mode
+  };
+
+  try {
+    const response = await axios.post(apiUrl, serviceData, {
+      headers: { 'Content-Type': 'application/json' },
+      timeout: config.timeout
+    });
+    
+    if (config.debug) {
+      console.log('[VARDAx] Service registered:', response.data);
+    }
+    
+    return response.data;
+  } catch (error) {
+    if (config.debug) {
+      console.error('[VARDAx] Service registration failed:', error.message);
+    }
+    return null;
+  }
+}
+
+/**
+ * Send heartbeat to VARDAx
+ */
+async function sendHeartbeat(config, stats) {
+  const apiUrl = `${config.protocol}://${config.host}:${config.port}/api/v1/services/heartbeat`;
+  
+  try {
+    await axios.post(apiUrl, {
+      service_id: config.serviceId,
+      requests_total: stats.requestsTotal,
+      anomalies_total: stats.anomaliesTotal
+    }, {
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 2000
+    });
+  } catch (error) {
+    // Silent fail for heartbeat
+  }
 }
 
 /**
@@ -128,21 +191,49 @@ function createMiddleware(connectionString, options = {}) {
   
   // Merge options
   Object.assign(config, options);
+  
+  // Generate service ID if not provided
+  if (!config.serviceId) {
+    config.serviceId = `svc-${config.serviceName || 'app'}-${Date.now().toString(36)}`;
+  }
+
+  // Stats tracking
+  const stats = {
+    requestsTotal: 0,
+    anomaliesTotal: 0
+  };
 
   if (config.debug) {
     console.log('[VARDAx] Initialized with config:', {
       host: config.host,
       port: config.port,
       mode: config.mode,
-      blockThreshold: config.blockThreshold
+      blockThreshold: config.blockThreshold,
+      serviceName: config.serviceName,
+      serviceId: config.serviceId
     });
   }
+
+  // Register service on startup
+  registerService(config).then(result => {
+    if (result && result.service_id) {
+      config.serviceId = result.service_id;
+    }
+  });
+
+  // Start heartbeat interval (every 15 seconds)
+  setInterval(() => {
+    sendHeartbeat(config, stats);
+  }, 15000);
 
   // Return Express middleware
   return async function vardaxMiddleware(req, res, next) {
     try {
+      // Track request
+      stats.requestsTotal++;
+      
       // Extract features
-      const features = extractFeatures(req);
+      const features = extractFeatures(req, config);
 
       // Analyze with VARDAx (async, non-blocking in monitor mode)
       const analysis = await analyzeRequest(features, config);
@@ -246,6 +337,28 @@ module.exports = createMiddleware;
 
 // Named exports
 module.exports.createMiddleware = createMiddleware;
+module.exports.createVardaxMiddleware = function(options) {
+  // Convenience function that accepts an options object
+  // Usage: createVardaxMiddleware({ apiUrl: 'http://localhost:8000', mode: 'monitor', serviceName: 'my-app' })
+  const { apiUrl, apiKey, mode, serviceName, serviceId, environment, version, ...rest } = options;
+  
+  let connectionString = apiUrl || 'http://localhost:8000';
+  const params = new URLSearchParams();
+  
+  if (apiKey) params.set('apiKey', apiKey);
+  if (mode) params.set('mode', mode);
+  if (serviceName) params.set('serviceName', serviceName);
+  if (serviceId) params.set('serviceId', serviceId);
+  if (environment) params.set('environment', environment);
+  if (version) params.set('version', version);
+  
+  const paramString = params.toString();
+  if (paramString) {
+    connectionString += (connectionString.includes('?') ? '&' : '?') + paramString;
+  }
+  
+  return createMiddleware(connectionString, rest);
+};
 module.exports.createClient = createClient;
 module.exports.parseConnectionString = parseConnectionString;
 module.exports.extractFeatures = extractFeatures;

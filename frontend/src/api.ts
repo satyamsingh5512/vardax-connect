@@ -119,6 +119,13 @@ export const api = {
   
   loadFromDatabase: () =>
     fetchApi<{ status: string; anomalies_loaded: number; rules_loaded: number }>('/admin/load-from-db', { method: 'POST' }),
+  
+  // Connected Services
+  getConnectedServices: () =>
+    fetchApi<any[]>('/services'),
+  
+  unregisterService: (serviceId: string) =>
+    fetchApi<{ status: string; service_id: string }>(`/services/${serviceId}`, { method: 'DELETE' }),
 };
 
 // WebSocket connection for real-time updates
