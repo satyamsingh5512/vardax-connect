@@ -43,3 +43,9 @@ Thumbs.db
 *.pem
 *.key
 secrets/
+
+# Runtime files
+*.pid
+.vardax-*.pid
+ngrok*.tgz
+ngrok.log
