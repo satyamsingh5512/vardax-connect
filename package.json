@@ -7,7 +7,14 @@
     "dev:backend": "cd backend && ./venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
     "dev:frontend": "cd frontend && npm run dev",
     "install:all": "cd frontend && npm install",
-    "setup": "npm run install:all"
+    "setup": "npm run install:all",
+    "test": "bash scripts/run_all_tests.sh",
+    "test:backend": "backend/venv/bin/python -m pytest backend/tests/ -v",
+    "test:ml": "backend/venv/bin/python -m pytest backend/tests/test_ml_models.py -v",
+    "test:features": "backend/venv/bin/python -m pytest backend/tests/test_feature_extractor.py -v",
+    "test:fortress": "backend/venv/bin/python -m pytest fortress/tests/ -v",
+    "test:connect": "node vardax-connect/test/test-comprehensive.js",
+    "test:quick": "backend/venv/bin/python scripts/quick_test.py"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
