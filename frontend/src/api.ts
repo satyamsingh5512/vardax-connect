@@ -134,15 +134,16 @@ export function connectWebSocket(
   onConnect: () => void,
   onDisconnect: () => void
 ) {
+  // Use relative path - Vite proxy will handle it
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsUrl = WS_BASE 
-    ? `${WS_BASE}/api/v1/ws/anomalies`
-    : `${protocol}//${window.location.host}/api/v1/ws/anomalies`;
+  const wsUrl = `${protocol}//${window.location.host}/api/v1/ws/anomalies`;
+  
+  console.log('[WS] Connecting to:', wsUrl);
   
   const ws = new WebSocket(wsUrl);
   
   ws.onopen = () => {
-    console.log('WebSocket connected');
+    console.log('[WS] Connected');
     onConnect();
   };
   
@@ -153,19 +154,19 @@ export function connectWebSocket(
         onAnomaly(message.data);
       }
     } catch (e) {
-      console.error('WebSocket message error:', e);
+      console.error('[WS] Message parse error:', e);
     }
   };
   
   ws.onclose = () => {
-    console.log('WebSocket disconnected');
+    console.log('[WS] Disconnected, reconnecting in 5s...');
     onDisconnect();
     // Reconnect after 5 seconds
     setTimeout(() => connectWebSocket(onAnomaly, onConnect, onDisconnect), 5000);
   };
   
   ws.onerror = (error) => {
-    console.error('WebSocket error:', error);
+    console.error('[WS] Error:', error);
   };
   
   return ws;
