@@ -1,14 +1,11 @@
 {
   "name": "vardax-connect",
-  "version": "1.0.0",
-  "description": "Connect any Node.js application to VARDAx ML-Powered WAF with a simple connection string",
+  "version": "1.0.1",
+  "description": "Connect any Node.js/Express app to VARDAx ML-Powered WAF - one command, zero config",
   "main": "index.js",
   "types": "index.d.ts",
   "scripts": {
-    "test": "node test/test-all.js",
-    "test:basic": "node test/test.js",
-    "test:rate-limiter": "node test/test-rate-limiter.js",
-    "test:all": "node test/test-all.js"
+    "test": "node test/test.js"
   },
   "keywords": [
     "vardax",
@@ -18,26 +15,39 @@
     "ml",
     "anomaly-detection",
     "middleware",
-    "express"
+    "express",
+    "rate-limiting",
+    "ddos-protection"
   ],
-  "author": "Your Name <your.email@example.com>",
+  "author": "VARDAx Team",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-github-username/vardax"
+    "url": "https://github.com/satyamsingh5512/vardax-connect.git"
   },
-  "homepage": "https://github.com/your-github-username/vardax#readme",
+  "homepage": "https://github.com/satyamsingh5512/vardax-connect#readme",
   "bugs": {
-    "url": "https://github.com/your-github-username/vardax/issues"
+    "url": "https://github.com/satyamsingh5512/vardax-connect/issues"
   },
   "dependencies": {
-    "axios": "^1.6.2",
-    "vardax-connect": "^1.0.0"
+    "axios": "^1.6.2"
   },
   "peerDependencies": {
-    "express": "^4.0.0"
+    "express": "^4.0.0 || ^5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "express": {
+      "optional": true
+    }
   },
   "engines": {
     "node": ">=14.0.0"
-  }
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "lib/",
+    "README.md",
+    "LICENSE"
+  ]
 }
