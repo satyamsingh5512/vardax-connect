@@ -45,9 +45,9 @@ function AppContent() {
         setModelHealth(health);
       } catch (e) {
         console.error('Failed to load initial data:', e);
-        // Use mock data for demo
-        setAnomalies(generateMockAnomalies());
-        setPendingRules(generateMockRules());
+        // Initialize with empty data - will show "No data" states
+        setAnomalies([]);
+        setPendingRules([]);
       }
     };
     
@@ -103,65 +103,6 @@ function AppContent() {
       </div>
     </>
   );
-}
-
-// Mock data generators for demo
-function generateMockAnomalies() {
-  const severities = ['low', 'medium', 'high', 'critical'] as const;
-  const categories = ['rate_abuse', 'bot_attack', 'credential_stuffing', 'reconnaissance', 'injection_attempt'];
-  const explanations = [
-    'Request rate 340% above baseline',
-    'Bot-like behavior detected (score: 0.85)',
-    'Unusual API call sequence',
-    'High entropy in query parameters',
-    'Session accessed 47 unique endpoints',
-    'Authentication failure spike',
-  ];
-  
-  return Array.from({ length: 25 }, (_, i) => ({
-    anomaly_id: `anom-${Date.now()}-${i}`,
-    timestamp: new Date(Date.now() - i * 60000).toISOString(),
-    client_ip: `192.168.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
-    uri: `/api/v1/${['users', 'products', 'orders', 'auth/login'][Math.floor(Math.random() * 4)]}`,
-    severity: severities[Math.floor(Math.random() * severities.length)],
-    confidence: 0.5 + Math.random() * 0.5,
-    attack_category: categories[Math.floor(Math.random() * categories.length)],
-    top_explanation: explanations[Math.floor(Math.random() * explanations.length)],
-    status: i < 5 ? 'new' : 'reviewed',
-  }));
-}
-
-function generateMockRules() {
-  return [
-    {
-      rule_id: 'vardax-rate-abc123',
-      created_at: new Date().toISOString(),
-      source_anomaly_ids: ['anom-1', 'anom-2', 'anom-3'],
-      anomaly_count: 12,
-      rule_type: 'rate_limit',
-      rule_content: `SecRule REQUEST_URI "@rx ^/api/v1/login" \\
-    "id:9900001,phase:1,deny,status:429,\\
-    msg:'VARDAx: Rate limit exceeded'"`,
-      rule_description: 'Rate limit /api/v1/login to 10 requests per minute',
-      confidence: 0.87,
-      false_positive_estimate: 0.05,
-      status: 'pending' as const,
-    },
-    {
-      rule_id: 'vardax-ip-def456',
-      created_at: new Date(Date.now() - 3600000).toISOString(),
-      source_anomaly_ids: ['anom-4', 'anom-5'],
-      anomaly_count: 47,
-      rule_type: 'ip_block',
-      rule_content: `SecRule REMOTE_ADDR "@ipMatch 192.168.1.100" \\
-    "id:9900002,phase:1,deny,status:403,\\
-    msg:'VARDAx: Suspicious IP blocked'"`,
-      rule_description: 'Block IP 192.168.1.100 - 47 anomalies detected',
-      confidence: 0.92,
-      false_positive_estimate: 0.02,
-      status: 'pending' as const,
-    },
-  ];
 }
 
 function App() {
