@@ -55,12 +55,18 @@ export function LoadingScreen({ onLoadComplete }: LoadingScreenProps) {
           <svg viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="var(--accent-cyan)" />
-                <stop offset="50%" stopColor="var(--accent-blue)" />
-                <stop offset="100%" stopColor="var(--accent-purple)" />
+                <stop offset="0%" stopColor="#06b6d4" />
+                <stop offset="33%" stopColor="#3b82f6" />
+                <stop offset="66%" stopColor="#a855f7" />
+                <stop offset="100%" stopColor="#ec4899" />
+              </linearGradient>
+              <linearGradient id="shieldGrad2" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#10b981" />
+                <stop offset="50%" stopColor="#3b82f6" />
+                <stop offset="100%" stopColor="#a855f7" />
               </linearGradient>
               <filter id="glow">
-                <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
                 <feMerge>
                   <feMergeNode in="coloredBlur"/>
                   <feMergeNode in="SourceGraphic"/>
@@ -98,12 +104,12 @@ export function LoadingScreen({ onLoadComplete }: LoadingScreenProps) {
             <path
               d="M42 58L48 64L58 50"
               fill="none"
-              stroke="var(--accent-green)"
-              strokeWidth="2"
+              stroke="#10b981"
+              strokeWidth="3"
               strokeLinecap="round"
               strokeLinejoin="round"
               opacity={progress >= 100 ? 1 : 0}
-              style={{ transition: 'opacity 0.3s ease' }}
+              style={{ transition: 'opacity 0.3s ease', filter: 'drop-shadow(0 0 8px #10b981)' }}
             />
           </svg>
         </div>

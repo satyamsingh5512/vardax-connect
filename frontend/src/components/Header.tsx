@@ -53,21 +53,21 @@ export function Header() {
         {trafficMetrics && (
           <>
             <div className="header-stat">
-              <div className="header-stat-value" style={{ color: 'var(--text-primary)' }}>
+              <div className="header-stat-value gradient-text-vibrant" style={{ color: 'var(--text-primary)' }}>
                 {trafficMetrics.requests_per_second.toFixed(0)}
               </div>
               <div className="header-stat-label">Requests/sec</div>
             </div>
             
             <div className="header-stat">
-              <div className="header-stat-value" style={{ color: 'var(--accent-yellow)' }}>
+              <div className="header-stat-value" style={{ color: '#f59e0b' }}>
                 {trafficMetrics.anomalies_per_minute}
               </div>
               <div className="header-stat-label">Anomalies/min</div>
             </div>
             
             <div className="header-stat">
-              <div className="header-stat-value" style={{ color: 'var(--accent-red)' }}>
+              <div className="header-stat-value" style={{ color: '#ef4444' }}>
                 {trafficMetrics.blocked_requests}
               </div>
               <div className="header-stat-label">Blocked</div>

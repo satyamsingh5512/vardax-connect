@@ -128,8 +128,9 @@ export function Overview() {
             <AreaChart data={trafficData}>
               <defs>
                 <linearGradient id="trafficGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#388bfd" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#388bfd" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4}/>
+                  <stop offset="50%" stopColor="#a855f7" stopOpacity={0.2}/>
+                  <stop offset="95%" stopColor="#ec4899" stopOpacity={0}/>
                 </linearGradient>
               </defs>
               <XAxis dataKey="time" stroke="#6e7681" fontSize={10} tickLine={false} axisLine={false} />
@@ -137,17 +138,17 @@ export function Overview() {
               <Tooltip
                 contentStyle={{ 
                   backgroundColor: '#161b22', 
-                  border: '1px solid #21262d',
-                  borderRadius: '6px',
-                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.4)'
+                  border: '2px solid #3b82f6',
+                  borderRadius: '8px',
+                  boxShadow: '0 0 20px rgba(59, 130, 246, 0.3)'
                 }}
-                labelStyle={{ color: '#f0f6fc' }}
+                labelStyle={{ color: '#f0f6fc', fontWeight: 600 }}
               />
               <Area
                 type="monotone"
                 dataKey="requests"
-                stroke="#388bfd"
-                strokeWidth={2}
+                stroke="#3b82f6"
+                strokeWidth={3}
                 fill="url(#trafficGradient)"
               />
             </AreaChart>
@@ -160,23 +161,30 @@ export function Overview() {
           </div>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={trafficData}>
+              <defs>
+                <linearGradient id="anomalyGradient" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#f59e0b" />
+                  <stop offset="50%" stopColor="#f97316" />
+                  <stop offset="100%" stopColor="#ef4444" />
+                </linearGradient>
+              </defs>
               <XAxis dataKey="time" stroke="#6e7681" fontSize={10} tickLine={false} axisLine={false} />
               <YAxis stroke="#6e7681" fontSize={10} tickLine={false} axisLine={false} />
               <Tooltip
                 contentStyle={{ 
                   backgroundColor: '#161b22', 
-                  border: '1px solid #21262d',
-                  borderRadius: '6px',
-                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.4)'
+                  border: '2px solid #f59e0b',
+                  borderRadius: '8px',
+                  boxShadow: '0 0 20px rgba(245, 158, 11, 0.3)'
                 }}
-                labelStyle={{ color: '#f0f6fc' }}
+                labelStyle={{ color: '#f0f6fc', fontWeight: 600 }}
               />
               <Line
                 type="monotone"
                 dataKey="anomalies"
-                stroke="#ffa502"
-                strokeWidth={2}
-                dot={false}
+                stroke="url(#anomalyGradient)"
+                strokeWidth={3}
+                dot={{ fill: '#f59e0b', r: 4, strokeWidth: 0 }}
               />
             </LineChart>
           </ResponsiveContainer>
@@ -197,7 +205,13 @@ export function Overview() {
             {severityData.map((item) => (
               <div key={item.name} className="score-bar">
                 <span className="score-label flex items-center gap-2">
-                  <span className="severity-dot" style={{ backgroundColor: item.color }} />
+                  <span 
+                    className="severity-dot animate-pulse" 
+                    style={{ 
+                      backgroundColor: item.color,
+                      boxShadow: `0 0 10px ${item.color}`,
+                    }} 
+                  />
                   {item.name}
                 </span>
                 <div className="score-track">
@@ -205,11 +219,12 @@ export function Overview() {
                     className="score-fill"
                     style={{
                       width: `${Math.min((item.value / Math.max(totalAnomalies, 1)) * 100, 100)}%`,
-                      backgroundColor: item.color,
+                      background: `linear-gradient(90deg, ${item.color}, ${item.color}dd)`,
+                      boxShadow: `0 0 10px ${item.color}66`,
                     }}
                   />
                 </div>
-                <span className="score-value">{item.value}</span>
+                <span className="score-value font-bold">{item.value}</span>
               </div>
             ))}
           </div>
@@ -252,15 +267,33 @@ export function Overview() {
                 { model_name: 'Isolation Forest', avg_inference_time_ms: 5.2, anomaly_rate_24h: 0.02 },
                 { model_name: 'Autoencoder', avg_inference_time_ms: 12.5, anomaly_rate_24h: 0.025 },
                 { model_name: 'EWMA Baseline', avg_inference_time_ms: 0.5, anomaly_rate_24h: 0.018 },
-              ]).map((model) => (
-                <div key={model.model_name} className="flex items-center gap-3 p-3" style={{ background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)' }}>
-                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--accent-green)' }} />
-                  <span className="text-sm flex-1" style={{ color: 'var(--text-secondary)' }}>{model.model_name}</span>
-                  <span className="text-xs font-mono" style={{ color: 'var(--text-tertiary)' }}>
-                    {model.avg_inference_time_ms.toFixed(1)}ms
-                  </span>
-                </div>
-              ))}
+              ]).map((model, idx) => {
+                const colors = ['#10b981', '#3b82f6', '#a855f7'];
+                const modelColor = colors[idx % colors.length];
+                return (
+                  <div 
+                    key={model.model_name} 
+                    className="flex items-center gap-3 p-3 transition-all hover:scale-105" 
+                    style={{ 
+                      background: `linear-gradient(135deg, ${modelColor}15, ${modelColor}05)`, 
+                      borderRadius: 'var(--radius-md)',
+                      border: `1px solid ${modelColor}40`,
+                    }}
+                  >
+                    <div 
+                      className="w-2 h-2 rounded-full animate-pulse" 
+                      style={{ 
+                        backgroundColor: modelColor,
+                        boxShadow: `0 0 10px ${modelColor}`,
+                      }} 
+                    />
+                    <span className="text-sm flex-1 font-medium" style={{ color: 'var(--text-secondary)' }}>{model.model_name}</span>
+                    <span className="text-xs font-mono font-semibold" style={{ color: modelColor }}>
+                      {model.avg_inference_time_ms.toFixed(1)}ms
+                    </span>
+                  </div>
+                );
+              })}}
             </div>
           </div>
           <div className="card-footer">
@@ -290,11 +323,31 @@ function StatCard({
   subtitle?: string;
   variant?: 'default' | 'warning' | 'critical' | 'success';
 }) {
+  const gradientColors = {
+    default: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(168, 85, 247, 0.05))',
+    warning: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(251, 191, 36, 0.05))',
+    critical: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05))',
+    success: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.05))',
+  };
+
+  const borderColors = {
+    default: '#3b82f6',
+    warning: '#f59e0b',
+    critical: '#ef4444',
+    success: '#10b981',
+  };
+
   return (
-    <div className={`stat-card ${variant}`}>
+    <div 
+      className={`stat-card ${variant} border-gradient-animated`} 
+      style={{ 
+        background: gradientColors[variant],
+        borderColor: borderColors[variant],
+      }}
+    >
       <div className="stat-label">{title}</div>
       <div className="flex items-end gap-2">
-        <span className="stat-value">{value}</span>
+        <span className="stat-value gradient-text-vibrant">{value}</span>
         {change && (
           <span className={`stat-change ${positive ? 'positive' : 'negative'}`}>
             {positive ? '↑' : '↓'} {change}
