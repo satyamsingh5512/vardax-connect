@@ -74,20 +74,21 @@ export function ModelHealth() {
             <Tooltip
               contentStyle={{ 
                 backgroundColor: '#161b22', 
-                border: '1px solid #21262d',
-                borderRadius: '6px'
+                border: '2px solid #3b82f6',
+                borderRadius: '8px',
+                boxShadow: '0 0 20px rgba(59, 130, 246, 0.3)'
               }}
-              labelStyle={{ color: '#f0f6fc' }}
+              labelStyle={{ color: '#f0f6fc', fontWeight: 600 }}
             />
-            <Line type="monotone" dataKey="isolation_forest" stroke="#388bfd" strokeWidth={2} dot={false} name="Isolation Forest" />
-            <Line type="monotone" dataKey="autoencoder" stroke="#a371f7" strokeWidth={2} dot={false} name="Autoencoder" />
-            <Line type="monotone" dataKey="ewma" stroke="#3fb950" strokeWidth={2} dot={false} name="EWMA" />
+            <Line type="monotone" dataKey="isolation_forest" stroke="#3b82f6" strokeWidth={3} dot={false} name="Isolation Forest" />
+            <Line type="monotone" dataKey="autoencoder" stroke="#a855f7" strokeWidth={3} dot={false} name="Autoencoder" />
+            <Line type="monotone" dataKey="ewma" stroke="#10b981" strokeWidth={3} dot={false} name="EWMA" />
           </LineChart>
         </ResponsiveContainer>
         <div className="flex justify-center gap-6 mt-4">
-          <LegendItem color="#388bfd" label="Isolation Forest" />
-          <LegendItem color="#a371f7" label="Autoencoder" />
-          <LegendItem color="#3fb950" label="EWMA Baseline" />
+          <LegendItem color="#3b82f6" label="Isolation Forest" />
+          <LegendItem color="#a855f7" label="Autoencoder" />
+          <LegendItem color="#10b981" label="EWMA Baseline" />
         </div>
       </div>
       

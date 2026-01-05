@@ -30,15 +30,31 @@ export function AnomalyList() {
         <div className="p-4 flex items-center gap-4" style={{ borderBottom: '1px solid var(--border-primary)' }}>
           <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Filter by severity:</span>
           <div className="filter-group">
-            {(['all', 'critical', 'high', 'medium', 'low'] as const).map((sev) => (
-              <button
-                key={sev}
-                onClick={() => setFilter(sev)}
-                className={`filter-pill ${filter === sev ? 'active' : ''}`}
-              >
-                {sev.charAt(0).toUpperCase() + sev.slice(1)}
-              </button>
-            ))}
+            {(['all', 'critical', 'high', 'medium', 'low'] as const).map((sev) => {
+              const colors = {
+                all: { bg: 'linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(168, 85, 247, 0.1))', border: '#3b82f6', glow: 'rgba(59, 130, 246, 0.3)' },
+                critical: { bg: 'linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.1))', border: '#ef4444', glow: 'rgba(239, 68, 68, 0.3)' },
+                high: { bg: 'linear-gradient(135deg, rgba(255, 82, 82, 0.15), rgba(239, 68, 68, 0.1))', border: '#ff5252', glow: 'rgba(255, 82, 82, 0.3)' },
+                medium: { bg: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(251, 191, 36, 0.1))', border: '#f59e0b', glow: 'rgba(245, 158, 11, 0.3)' },
+                low: { bg: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.1))', border: '#10b981', glow: 'rgba(16, 185, 129, 0.3)' },
+              };
+              const isActive = filter === sev;
+              return (
+                <button
+                  key={sev}
+                  onClick={() => setFilter(sev)}
+                  className={`filter-pill ${isActive ? 'active' : ''}`}
+                  style={isActive ? {
+                    background: colors[sev].bg,
+                    borderColor: colors[sev].border,
+                    color: colors[sev].border,
+                    boxShadow: `0 0 15px ${colors[sev].glow}`,
+                  } : undefined}
+                >
+                  {sev.charAt(0).toUpperCase() + sev.slice(1)}
+                </button>
+              );
+            })}
           </div>
           <div className="flex-1" />
           <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
@@ -68,8 +84,14 @@ export function AnomalyList() {
                   className={`cursor-pointer ${detailAnomaly?.anomaly_id === anomaly.anomaly_id ? 'selected' : ''} ${anomaly.severity === 'critical' || anomaly.severity === 'high' ? 'anomaly' : ''}`}
                 >
                   <td>
-                    <span className={`severity-badge ${anomaly.severity}`}>
-                      <span className={`severity-dot ${anomaly.severity}`} />
+                    <span className={`severity-badge ${anomaly.severity}`} style={{
+                      boxShadow: anomaly.severity === 'critical' ? '0 0 15px rgba(239, 68, 68, 0.4)' :
+                                 anomaly.severity === 'high' ? '0 0 15px rgba(255, 82, 82, 0.4)' :
+                                 anomaly.severity === 'medium' ? '0 0 15px rgba(245, 158, 11, 0.4)' : 'none'
+                    }}>
+                      <span className={`severity-dot ${anomaly.severity} animate-pulse`} style={{
+                        boxShadow: `0 0 10px currentColor`
+                      }} />
                       {anomaly.severity.toUpperCase()}
                     </span>
                   </td>

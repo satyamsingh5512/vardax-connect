@@ -4,11 +4,31 @@ import { api } from '../api';
 import type { RuleRecommendation, RuleStatus } from '../types';
 import { format } from 'date-fns';
 
-const statusStyles: Record<RuleStatus, { bg: string; color: string; border: string }> = {
-  pending: { bg: 'rgba(255, 165, 2, 0.15)', color: 'var(--severity-medium)', border: 'rgba(255, 165, 2, 0.3)' },
-  approved: { bg: 'rgba(46, 213, 115, 0.15)', color: 'var(--severity-low)', border: 'rgba(46, 213, 115, 0.3)' },
-  rejected: { bg: 'rgba(139, 148, 158, 0.15)', color: 'var(--text-tertiary)', border: 'rgba(139, 148, 158, 0.3)' },
-  rolled_back: { bg: 'rgba(248, 81, 73, 0.15)', color: 'var(--accent-red)', border: 'rgba(248, 81, 73, 0.3)' },
+const statusStyles: Record<RuleStatus, { bg: string; color: string; border: string; glow: string }> = {
+  pending: { 
+    bg: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(251, 191, 36, 0.1))', 
+    color: '#f59e0b', 
+    border: '#f59e0b',
+    glow: '0 0 15px rgba(245, 158, 11, 0.3)'
+  },
+  approved: { 
+    bg: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.1))', 
+    color: '#10b981', 
+    border: '#10b981',
+    glow: '0 0 15px rgba(16, 185, 129, 0.3)'
+  },
+  rejected: { 
+    bg: 'linear-gradient(135deg, rgba(107, 114, 128, 0.15), rgba(75, 85, 99, 0.1))', 
+    color: '#6b7280', 
+    border: '#6b7280',
+    glow: '0 0 10px rgba(107, 114, 128, 0.2)'
+  },
+  rolled_back: { 
+    bg: 'linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.1))', 
+    color: '#ef4444', 
+    border: '#ef4444',
+    glow: '0 0 15px rgba(239, 68, 68, 0.3)'
+  },
 };
 
 export function RuleApproval() {

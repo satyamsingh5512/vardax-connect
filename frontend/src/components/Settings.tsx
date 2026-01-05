@@ -70,12 +70,17 @@ export function Settings() {
         <div 
           className="p-4 rounded-lg flex items-center justify-between"
           style={{ 
-            background: message.type === 'success' ? 'rgba(63, 185, 80, 0.15)' : 'rgba(248, 81, 73, 0.15)',
-            border: `1px solid ${message.type === 'success' ? 'rgba(63, 185, 80, 0.3)' : 'rgba(248, 81, 73, 0.3)'}`,
-            color: message.type === 'success' ? 'var(--accent-green)' : 'var(--accent-red)'
+            background: message.type === 'success' 
+              ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.1))' 
+              : 'linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.1))',
+            border: `2px solid ${message.type === 'success' ? '#10b981' : '#ef4444'}`,
+            boxShadow: message.type === 'success' 
+              ? '0 0 20px rgba(16, 185, 129, 0.3)' 
+              : '0 0 20px rgba(239, 68, 68, 0.3)',
+            color: message.type === 'success' ? '#10b981' : '#ef4444'
           }}
         >
-          <span>{message.text}</span>
+          <span className="font-medium">{message.text}</span>
           <button onClick={() => setMessage(null)} className="text-sm underline opacity-70 hover:opacity-100">Dismiss</button>
         </div>
       )}

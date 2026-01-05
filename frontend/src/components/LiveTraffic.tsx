@@ -120,8 +120,8 @@ export function LiveTraffic() {
               <span 
                 className="w-2 h-2 rounded-full"
                 style={{ 
-                  backgroundColor: isPaused ? 'var(--accent-yellow)' : 'var(--accent-green)',
-                  boxShadow: isPaused ? 'none' : '0 0 8px var(--accent-green)',
+                  backgroundColor: isPaused ? '#f59e0b' : '#10b981',
+                  boxShadow: isPaused ? '0 0 10px rgba(245, 158, 11, 0.5)' : '0 0 15px rgba(16, 185, 129, 0.6), 0 0 30px rgba(16, 185, 129, 0.3)',
                   animation: isPaused ? 'none' : 'pulse 2s ease-in-out infinite'
                 }}
               />
@@ -131,19 +131,19 @@ export function LiveTraffic() {
             {/* Live counters */}
             <div className="flex items-center gap-6 ml-6">
               <div className="header-stat">
-                <div className="header-stat-value" style={{ fontSize: '20px' }}>{stats.rps}</div>
+                <div className="header-stat-value gradient-text-vibrant" style={{ fontSize: '20px' }}>{stats.rps}</div>
                 <div className="header-stat-label">req/sec</div>
               </div>
               <div className="header-stat">
-                <div className="header-stat-value" style={{ fontSize: '20px', color: 'var(--accent-green)' }}>{stats.total}</div>
+                <div className="header-stat-value" style={{ fontSize: '20px', color: '#3b82f6' }}>{stats.total}</div>
                 <div className="header-stat-label">total</div>
               </div>
               <div className="header-stat">
-                <div className="header-stat-value" style={{ fontSize: '20px', color: 'var(--accent-yellow)' }}>{stats.anomalies}</div>
+                <div className="header-stat-value" style={{ fontSize: '20px', color: '#f59e0b' }}>{stats.anomalies}</div>
                 <div className="header-stat-label">anomalies</div>
               </div>
               <div className="header-stat">
-                <div className="header-stat-value" style={{ fontSize: '20px', color: 'var(--accent-red)' }}>{stats.blocked}</div>
+                <div className="header-stat-value" style={{ fontSize: '20px', color: '#ef4444' }}>{stats.blocked}</div>
                 <div className="header-stat-label">blocked</div>
               </div>
             </div>
@@ -152,15 +152,29 @@ export function LiveTraffic() {
           <div className="flex items-center gap-3">
             {/* Filter buttons */}
             <div className="filter-group">
-              {(['all', 'anomalies', 'blocked'] as const).map((f) => (
-                <button
-                  key={f}
-                  onClick={() => setFilter(f)}
-                  className={`filter-pill ${filter === f ? 'active' : ''}`}
-                >
-                  {f.charAt(0).toUpperCase() + f.slice(1)}
-                </button>
-              ))}
+              {(['all', 'anomalies', 'blocked'] as const).map((f) => {
+                const colors = {
+                  all: { bg: 'linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(168, 85, 247, 0.1))', border: '#3b82f6', glow: 'rgba(59, 130, 246, 0.3)' },
+                  anomalies: { bg: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(251, 191, 36, 0.1))', border: '#f59e0b', glow: 'rgba(245, 158, 11, 0.3)' },
+                  blocked: { bg: 'linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.1))', border: '#ef4444', glow: 'rgba(239, 68, 68, 0.3)' },
+                };
+                const isActive = filter === f;
+                return (
+                  <button
+                    key={f}
+                    onClick={() => setFilter(f)}
+                    className={`filter-pill ${isActive ? 'active' : ''}`}
+                    style={isActive ? {
+                      background: colors[f].bg,
+                      borderColor: colors[f].border,
+                      color: colors[f].border,
+                      boxShadow: `0 0 15px ${colors[f].glow}`,
+                    } : undefined}
+                  >
+                    {f.charAt(0).toUpperCase() + f.slice(1)}
+                  </button>
+                );
+              })}
             </div>
 
             {/* Pause/Resume */}
