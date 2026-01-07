@@ -13,13 +13,16 @@ echo "🛡️  VARDAx - ML-Powered WAF"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 # Cleanup
+echo "🧹 Cleaning up stale PID files..."
+rm -f "$PROJECT_DIR/.vardax-backend.pid" "$PROJECT_DIR/.vardax-frontend.pid" "$PROJECT_DIR/.vardax-ngrok.pid"
+
 echo "🔄 Stopping existing services..."
 pkill -f "uvicorn app.main" 2>/dev/null || true
-pkill -f "vite" 2>/dev/null || true
-pkill -f "ngrok" 2>/dev/null || true
+pkill -f "vite.*vardax" 2>/dev/null || true
+pkill -f "ngrok http" 2>/dev/null || true
 fuser -k $BACKEND_PORT/tcp 2>/dev/null || true
 fuser -k $FRONTEND_PORT/tcp 2>/dev/null || true
-sleep 2
+sleep 3
 
 # Start Backend
 echo "🚀 Starting Backend (port $BACKEND_PORT)..."

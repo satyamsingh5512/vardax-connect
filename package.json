@@ -4,7 +4,7 @@
   "description": "VARDAx - ML-Powered WAF Anomaly Detection System",
   "scripts": {
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:backend": "cd backend && ./venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
+    "dev:backend": "cd backend && source venv/bin/activate && python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8001",
     "dev:frontend": "cd frontend && npm run dev",
     "install:all": "cd frontend && npm install",
     "setup": "npm run install:all",
@@ -20,5 +20,20 @@
     "concurrently": "^8.2.2"
   },
   "author": "VARDAx Team",
-  "license": "MIT"
+  "license": "MIT",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/satyamsingh5512/vardax-connect.git"
+  },
+  "bugs": {
+    "url": "https://github.com/satyamsingh5512/vardax-connect/issues"
+  },
+  "homepage": "https://github.com/satyamsingh5512/vardax-connect#readme",
+  "dependencies": {
+    "vardax-connect": "^1.0.0"
+  }
 }

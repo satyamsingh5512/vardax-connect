@@ -11,11 +11,17 @@ FRONTEND_PORT=5173
 echo "🛡️  Starting VARDAx ML-Powered WAF..."
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
+# Clean up stale PID files
+echo "🧹 Cleaning up stale PID files..."
+rm -f "$PROJECT_DIR/.vardax-backend.pid" "$PROJECT_DIR/.vardax-frontend.pid" "$PROJECT_DIR/.vardax-ngrok.pid"
+
 # Kill any existing processes on our ports
-echo "🔄 Cleaning up existing processes..."
+echo "🔄 Stopping existing processes..."
 fuser -k $BACKEND_PORT/tcp 2>/dev/null || true
 fuser -k $FRONTEND_PORT/tcp 2>/dev/null || true
-sleep 1
+pkill -f "uvicorn app.main" 2>/dev/null || true
+pkill -f "vite.*vardax" 2>/dev/null || true
+sleep 2
 
 # Start Backend
 echo "🚀 Starting Backend (port $BACKEND_PORT)..."
