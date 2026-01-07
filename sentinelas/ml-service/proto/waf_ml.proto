@@ -1,0 +1,232 @@
+// waf_ml.proto - Sentinelas WAF ML Service Protocol Buffer Definitions
+// gRPC interface between Coraza WAF plugin and Python ML service
+
+syntax = "proto3";
+
+package sentinelas;
+
+option go_package = "github.com/sentinelas/waf-ml/proto";
+
+// Main service for WAF ML inference
+service WAFMLService {
+  // Analyze a single request and return verdict
+  rpc Analyze(AnalyzeRequest) returns (AnalyzeResponse);
+  
+  // Batch analysis for high-throughput scenarios
+  rpc AnalyzeBatch(AnalyzeBatchRequest) returns (AnalyzeBatchResponse);
+  
+  // Get cached verdict by request fingerprint
+  rpc GetCachedVerdict(CacheRequest) returns (CacheResponse);
+  
+  // Stream alerts to dashboard
+  rpc StreamAlerts(AlertSubscription) returns (stream Alert);
+  
+  // Health check
+  rpc HealthCheck(HealthRequest) returns (HealthResponse);
+}
+
+// Request features extracted by Coraza plugin
+message AnalyzeRequest {
+  string request_id = 1;           // Unique request identifier
+  int64 timestamp = 2;             // Unix timestamp in milliseconds
+  
+  // Network features
+  string source_ip = 3;
+  int32 source_port = 4;
+  string dest_ip = 5;
+  int32 dest_port = 6;
+  
+  // TLS/JA4 fingerprint
+  string ja4_fingerprint = 7;
+  string ja4s_fingerprint = 8;     // Server fingerprint
+  string ja4h_fingerprint = 9;     // HTTP fingerprint
+  
+  // HTTP request features
+  string method = 10;
+  string uri = 11;
+  string protocol = 12;
+  string host = 13;
+  string user_agent = 14;
+  string content_type = 15;
+  int32 content_length = 16;
+  
+  // Extracted features for ML
+  RequestFeatures features = 17;
+  
+  // Raw data (optional, for deep inspection)
+  bytes raw_headers = 18;
+  bytes raw_body = 19;
+}
+
+// Numeric features for ML model input
+message RequestFeatures {
+  // Header analysis
+  float header_entropy = 1;        // Shannon entropy of headers
+  int32 header_count = 2;
+  int32 cookie_count = 3;
+  float cookie_entropy = 4;
+  
+  // URL/Path analysis
+  int32 uri_length = 5;
+  int32 query_param_count = 6;
+  int32 path_depth = 7;
+  float path_entropy = 8;
+  
+  // Argument analysis
+  int32 total_arg_length = 9;
+  int32 max_arg_length = 10;
+  float arg_entropy = 11;
+  int32 special_char_count = 12;
+  
+  // Payload indicators
+  bool has_sql_keywords = 13;
+  bool has_script_tags = 14;
+  bool has_path_traversal = 15;
+  bool has_command_injection = 16;
+  
+  // Behavioral features
+  float request_rate = 17;         // Requests per second from this IP
+  int32 error_rate = 18;           // Recent error responses to this IP
+  int32 unique_endpoints = 19;     // Unique endpoints accessed by IP
+  
+  // Additional numeric features for model
+  repeated float additional_features = 20;
+}
+
+// ML analysis response
+message AnalyzeResponse {
+  string request_id = 1;
+  
+  // Verdict
+  Verdict verdict = 2;
+  float anomaly_score = 3;         // 0.0 to 1.0, higher = more suspicious
+  float confidence = 4;            // Model confidence in the verdict
+  
+  // Classification
+  AttackType attack_type = 5;
+  string attack_subtype = 6;       // More specific classification
+  
+  // Explainability (SHAP values)
+  ShapExplanation explanation = 7;
+  
+  // Recommended action
+  RecommendedRule recommended_rule = 8;
+  
+  // Timing
+  int64 inference_time_us = 9;     // Inference time in microseconds
+  
+  // Caching
+  string cache_key = 10;           // For verdict caching
+  int32 cache_ttl_seconds = 11;
+}
+
+// SHAP explanation for interpretability
+message ShapExplanation {
+  float base_value = 1;            // Expected model output
+  repeated FeatureContribution contributions = 2;
+  string summary = 3;              // Human-readable explanation
+}
+
+message FeatureContribution {
+  string feature_name = 1;
+  float feature_value = 2;
+  float shap_value = 3;            // Contribution to prediction
+  float impact_percent = 4;        // Relative importance
+}
+
+// Recommended SecRule for automatic mitigation
+message RecommendedRule {
+  bool has_rule = 1;
+  string secrule = 2;              // Full Coraza SecRule string
+  int32 rule_id = 3;               // Unique rule ID
+  string pattern = 4;              // Regex pattern used
+  bool is_redos_safe = 5;          // ReDoS safety check result
+  float estimated_fp_rate = 6;     // Estimated false positive rate
+  string mitigation_type = 7;      // BLOCK, RATE_LIMIT, CHALLENGE
+  string metadata = 8;             // JSON metadata
+}
+
+// Batch request
+message AnalyzeBatchRequest {
+  repeated AnalyzeRequest requests = 1;
+}
+
+message AnalyzeBatchResponse {
+  repeated AnalyzeResponse responses = 1;
+  int64 total_inference_time_us = 2;
+}
+
+// Cache operations
+message CacheRequest {
+  string cache_key = 1;
+}
+
+message CacheResponse {
+  bool found = 1;
+  AnalyzeResponse cached_response = 2;
+}
+
+// Alert streaming
+message AlertSubscription {
+  repeated AttackType attack_types = 1;  // Filter by attack type
+  float min_severity = 2;                 // Minimum severity threshold
+}
+
+message Alert {
+  string alert_id = 1;
+  int64 timestamp = 2;
+  string source_ip = 3;
+  AttackType attack_type = 4;
+  float severity = 5;
+  string description = 6;
+  ShapExplanation explanation = 7;
+  RecommendedRule rule = 8;
+}
+
+// Health check
+message HealthRequest {}
+
+message HealthResponse {
+  bool healthy = 1;
+  string status = 2;
+  map<string, string> component_status = 3;
+  int64 uptime_seconds = 4;
+  ModelStatus model_status = 5;
+}
+
+message ModelStatus {
+  bool autoencoder_loaded = 1;
+  bool classifier_loaded = 2;
+  bool shap_explainer_ready = 3;
+  int64 total_inferences = 4;
+  float avg_inference_time_ms = 5;
+}
+
+// Enums
+enum Verdict {
+  VERDICT_UNKNOWN = 0;
+  VERDICT_ALLOW = 1;
+  VERDICT_BLOCK = 2;
+  VERDICT_RATE_LIMIT = 3;
+  VERDICT_CHALLENGE = 4;      // CAPTCHA or proof-of-work
+  VERDICT_LOG_ONLY = 5;       // Shadow mode
+}
+
+enum AttackType {
+  ATTACK_TYPE_UNKNOWN = 0;
+  ATTACK_TYPE_SQLI = 1;
+  ATTACK_TYPE_XSS = 2;
+  ATTACK_TYPE_LFI = 3;
+  ATTACK_TYPE_RFI = 4;
+  ATTACK_TYPE_RCE = 5;
+  ATTACK_TYPE_SSRF = 6;
+  ATTACK_TYPE_XXE = 7;
+  ATTACK_TYPE_CRLF = 8;
+  ATTACK_TYPE_PATH_TRAVERSAL = 9;
+  ATTACK_TYPE_BRUTE_FORCE = 10;
+  ATTACK_TYPE_BOT = 11;
+  ATTACK_TYPE_SCANNER = 12;
+  ATTACK_TYPE_DOS = 13;
+  ATTACK_TYPE_ANOMALY = 14;    // Generic anomaly
+  ATTACK_TYPE_BENIGN = 15;
+}
