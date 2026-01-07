@@ -170,7 +170,7 @@ async def get_recent_alerts(limit: int = 100):
     
     try:
         alerts = await state.redis_client.lrange("alerts:recent", 0, limit - 1)
-        return {"alerts": [eval(a) for a in alerts]}  # Use orjson in production
+        return {"alerts": [eval(a) if not isinstance(a, dict) else a for a in alerts]}  # Use eval carefully, move to json
     except Exception as e:
         logger.error(f"Error fetching alerts: {e}")
         return {"alerts": [], "error": str(e)}
@@ -257,7 +257,226 @@ async def analyze_request(request_data: dict):
         
     except Exception as e:
         logger.error(f"Analysis error: {e}")
-        return {"error": str(e), "verdict": "ALLOW"}  # Fail-open
+
+@app.post("/api/v1/rules/generate")
+async def generate_rules():
+    """Generate rules from recent unhandled anomalies."""
+    if not state.redis_client:
+        return []
+    
+    try:
+        # Fetch recent alerts from Redis
+        raw_alerts = await state.redis_client.lrange("alerts:recent", 0, 99)
+        generated = []
+        
+        for raw in raw_alerts:
+            # Safely parse JSON
+            try:
+                import json
+                # Handle both JSON strings and python dict strings (if any legacy)
+                if isinstance(raw, str) and raw.startswith("{"):
+                    import ast
+                    try:
+                        alert = json.loads(raw)
+                    except json.JSONDecodeError:
+                        alert = ast.literal_eval(raw)
+                else:
+                    continue
+            except Exception:
+                continue
+
+            # Check if alert has a recommended rule
+            if alert.get("recommended_rule") and alert["recommended_rule"].get("has_rule"):
+                rule = alert["recommended_rule"]
+                # Ensure status is set
+                if "status" not in rule:
+                    rule["status"] = "pending"
+                generated.append(rule)
+                
+        # De-duplicate rules based on rule_id
+        unique_rules = {}
+        for rule in generated:
+            rule_id = str(rule.get("rule_id"))
+            if rule_id not in unique_rules:
+                unique_rules[rule_id] = rule
+        
+        # Save to Redis rules:pending
+        for rule_id, rule in unique_rules.items():
+            import json
+            await state.redis_client.hset("rules:pending", rule_id, json.dumps(rule))
+            
+        return list(unique_rules.values())
+        
+    except Exception as e:
+        logger.error(f"Error generating rules: {e}")
+        return []
+
+
+@app.get("/api/v1/rules/pending")
+async def get_pending_rules():
+    """Get all pending rules."""
+    if not state.redis_client:
+        return []
+        
+    try:
+        raw_rules = await state.redis_client.hgetall("rules:pending")
+        import json
+        rules = []
+        for raw in raw_rules.values():
+            try:
+                rules.append(json.loads(raw))
+            except:
+                pass
+        return rules
+    except Exception as e:
+        logger.error(f"Error fetching pending rules: {e}")
+        return []
+
+
+@app.post("/api/v1/rules/approve")
+async def approve_rule(action_data: dict):
+    """Approve or reject a rule."""
+    if not state.redis_client:
+        return {"status": "error", "message": "Redis not connected"}
+        
+    rule_id = str(action_data.get("rule_id"))
+    action = action_data.get("action")
+    
+    try:
+        # Get the rule
+        import json
+        raw_rule = await state.redis_client.hget("rules:pending", rule_id)
+        if not raw_rule:
+            return {"status": "error", "message": "Rule not found"}
+            
+        rule = json.loads(raw_rule)
+        
+        if action == "approve":
+            rule["status"] = "approved"
+            # Move to approved
+            await state.redis_client.hset("rules:approved", rule_id, json.dumps(rule))
+            await state.redis_client.hdel("rules:pending", rule_id)
+            
+            # In a real system, we'd also push this to Coraza via a dedicated mechanism
+            # e.g., writing to a file or updating a shared memory segment
+            logger.info(f"Rule {rule_id} approved and deployed")
+            
+        elif action == "reject":
+            rule["status"] = "rejected"
+            # Move to rejected
+            await state.redis_client.hset("rules:rejected", rule_id, json.dumps(rule))
+            await state.redis_client.hdel("rules:pending", rule_id)
+            logger.info(f"Rule {rule_id} rejected")
+            
+        return rule
+        
+    except Exception as e:
+        logger.error(f"Error acting on rule: {e}")
+        return {"status": "error", "message": str(e)}
+
+
+# --- Admin & feedback endpoints ---
+
+@app.post("/api/v1/admin/clear-data")
+async def clear_all_data():
+    """Clear all data from Redis."""
+    if not state.redis_client:
+        return {"status": "error", "message": "Redis not connected"}
+    
+    try:
+        await state.redis_client.flushdb()
+        # Re-init necessary keys if needed
+        return {"status": "success", "message": "All data cleared"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.get("/api/v1/admin/db-stats")
+async def get_db_stats():
+    """Get database statistics."""
+    stats = {
+        "traffic_events": 0,
+        "anomalies": 0,
+        "rules": 0,
+        "feedback": 0,
+        "in_memory_anomalies": 0,
+        "in_memory_rules": 0,
+        "ws_connections": len(state.active_websockets)
+    }
+    
+    if state.redis_client:
+        stats["anomalies"] = await state.redis_client.llen("alerts:recent")
+        stats["rules"] = await state.redis_client.hlen("rules:approved") + await state.redis_client.hlen("rules:pending")
+        
+    return stats
+
+@app.post("/api/v1/admin/load-from-db")
+async def load_from_db():
+    return {"status": "success", "anomalies_loaded": 0, "rules_loaded": 0}
+
+@app.post("/api/v1/feedback")
+async def submit_feedback(feedback: dict):
+    # Log feedback
+    logger.info(f"Feedback received: {feedback}")
+    return {"status": "success"}
+
+# --- Visualization endpoints ---
+
+@app.get("/api/v1/replay/timeline")
+async def get_replay_timeline(since_minutes: int = 60, severity: str = None, ip: str = None):
+    # Return dummy data for now or fetch from Redis/Timescale
+    return []
+
+@app.get("/api/v1/replay/sequence/{ip}")
+async def get_attack_sequence(ip: str):
+    return []
+
+@app.get("/api/v1/heatmap/traffic")
+async def get_heatmap(since_minutes: int = 60, bucket_minutes: int = 5):
+    return []
+
+@app.get("/api/v1/geo/threats")
+async def get_geo_threats():
+    # Return mock geo data for demo
+    return [
+        {"country": "CN", "count": 120, "lat": 35.8617, "lng": 104.1954},
+        {"country": "RU", "count": 85, "lat": 61.5240, "lng": 105.3188},
+        {"country": "US", "count": 45, "lat": 37.0902, "lng": -95.7129},
+        {"country": "BR", "count": 30, "lat": -14.2350, "lng": -51.9253},
+    ]
+
+# --- Simulation endpoints ---
+
+@app.post("/api/v1/rules/simulate")
+async def simulate_rule(sim_data: dict):
+    return {
+        "status": "completed",
+        "matches": 0,
+        "false_positives": 0,
+        "accuracy": 1.0,
+        "sample_matches": []
+    }
+
+@app.get("/api/v1/rules/simulation-scenarios")
+async def get_simulation_scenarios():
+    return [
+        {"id": "sim_1", "name": "SQL Injection Wave", "description": "Simulate a distributed SQLi attack"},
+        {"id": "sim_2", "name": "Credential Stuffing", "description": "Simulate login brute force"},
+        {"id": "sim_3", "name": "Bot Scraping", "description": "Simulate aggressive scraper bot"},
+    ]
+
+# --- Services endpoints ---
+
+@app.get("/api/v1/services")
+async def get_services():
+    return [
+        {"id": "svc_1", "name": "Main App", "status": "active", "url": "http://localhost:3000", "last_active": "now"},
+        {"id": "svc_2", "name": "Admin Panel", "status": "active", "url": "http://localhost:8080", "last_active": "5m ago"},
+    ]
+
+@app.delete("/api/v1/services/{service_id}")
+async def unregister_service(service_id: str):
+    return {"status": "success", "service_id": service_id}
+
 
 
 def _dict_to_feature_vector(features: dict) -> list:

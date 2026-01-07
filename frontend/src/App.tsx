@@ -27,7 +27,7 @@ function AppContent() {
     setModelHealth,
     setWsConnected,
   } = useDashboardStore();
-  
+
   // Load initial data
   useEffect(() => {
     const loadData = async () => {
@@ -38,7 +38,7 @@ function AppContent() {
           api.getTrafficMetrics(),
           api.getModelHealth(),
         ]);
-        
+
         setAnomalies(anomalies);
         setPendingRules(rules);
         setTrafficMetrics(metrics);
@@ -50,9 +50,9 @@ function AppContent() {
         setPendingRules([]);
       }
     };
-    
+
     loadData();
-    
+
     // Refresh metrics every 5 seconds
     const interval = setInterval(async () => {
       try {
@@ -62,10 +62,10 @@ function AppContent() {
         // Ignore errors for periodic refresh
       }
     }, 5000);
-    
+
     return () => clearInterval(interval);
   }, []);
-  
+
   // Connect WebSocket for real-time updates
   useEffect(() => {
     const ws = connectWebSocket(
@@ -73,14 +73,14 @@ function AppContent() {
       () => setWsConnected(true),
       () => setWsConnected(false)
     );
-    
+
     return () => ws.close();
   }, []);
-  
+
   return (
     <>
       {isLoading && <LoadingScreen onLoadComplete={() => setIsLoading(false)} />}
-      
+
       <div className="dashboard-layout">
         <Header />
         <Navigation />
@@ -105,10 +105,18 @@ function AppContent() {
   );
 }
 
+import { LandingPage } from './components/LandingPage';
+
 function App() {
+  const [showLanding, setShowLanding] = useState(true);
+
   return (
     <ThemeProvider>
-      <AppContent />
+      {showLanding ? (
+        <LandingPage onLaunch={() => setShowLanding(false)} />
+      ) : (
+        <AppContent />
+      )}
     </ThemeProvider>
   );
 }

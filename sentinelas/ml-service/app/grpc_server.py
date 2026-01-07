@@ -320,6 +320,8 @@ class WAFMLServiceServicer(pb2_grpc.WAFMLServiceServicer):
             attack_type=self._map_attack_type(alert_data.get("attack_type", "")),
             severity=alert_data.get("severity", 0.0),
             description=alert_data.get("description", ""),
+            explanation=self._build_shap_explanation(alert_data.get("explanation", {})) if alert_data.get("explanation") else None,
+            rule=self._build_recommended_rule(alert_data.get("recommended_rule", {})) if alert_data.get("recommended_rule") else None,
         )
     
     def _request_to_dict(self, request: pb2.AnalyzeRequest) -> dict:
@@ -364,6 +366,8 @@ class WAFMLServiceServicer(pb2_grpc.WAFMLServiceServicer):
             "severity": response.anomaly_score,
             "description": response.explanation.summary if response.explanation else "",
             "uri": request.uri,
+            "explanation": self._shap_to_dict(response.explanation) if response.explanation else None,
+            "recommended_rule": self._recommended_rule_to_dict(response.recommended_rule) if response.recommended_rule.has_rule else None,
         }
         
         if self.state.redis_client:
@@ -375,6 +379,29 @@ class WAFMLServiceServicer(pb2_grpc.WAFMLServiceServicer):
                 await self.state.redis_client.ltrim("alerts:recent", 0, 999)
             except Exception as e:
                 logger.error(f"Error broadcasting alert: {e}")
+
+    def _recommended_rule_to_dict(self, rule: pb2.RecommendedRule) -> dict:
+        """Convert recommended rule protobuf to dict."""
+        import json
+        metadata = {}
+        try:
+            if rule.metadata:
+                # Handle single quotes from string representation
+                meta_str = rule.metadata.replace("'", '"')
+                metadata = json.loads(meta_str)
+        except:
+            pass
+            
+        return {
+            "has_rule": rule.has_rule,
+            "secrule": rule.secrule,
+            "rule_id": rule.rule_id,
+            "pattern": rule.pattern,
+            "is_redos_safe": rule.is_redos_safe,
+            "estimated_fp_rate": rule.estimated_fp_rate,
+            "mitigation_type": rule.mitigation_type,
+            "metadata": metadata,
+        }
 
 
 async def serve_grpc(app_state):
