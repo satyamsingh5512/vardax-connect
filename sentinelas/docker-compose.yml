@@ -1,0 +1,154 @@
+# Sentinelas ML-Augmented WAF - Docker Compose
+# Full stack: Caddy+Coraza, Python ML Service, Redis, TimescaleDB, React Dashboard
+# Usage: docker-compose up -d
+
+version: '3.8'
+
+services:
+  # TLS Termination + WAF with Coraza Plugin
+  caddy-waf:
+    build:
+      context: ./caddy
+      dockerfile: Dockerfile
+    container_name: sentinelas-caddy
+    ports:
+      - "${WAF_HTTP_PORT:-8080}:80"
+      - "${WAF_HTTPS_PORT:-8443}:443"
+    environment:
+      - ML_SERVICE_HOST=ml-service
+      - ML_SERVICE_PORT=50051
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      ml-service:
+        condition: service_healthy
+    networks:
+      - sentinelas-net
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:80/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Coraza WAF Plugin (standalone for development)
+  coraza-plugin:
+    build:
+      context: ./coraza-plugin
+      dockerfile: Dockerfile
+    container_name: sentinelas-coraza
+    environment:
+      - ML_SERVICE_ADDR=ml-service:50051
+      - GRPC_TIMEOUT_MS=${GRPC_TIMEOUT_MS:-10}
+      - SHADOW_MODE=${SHADOW_MODE:-false}
+      - REDIS_ADDR=redis:6379
+    depends_on:
+      - ml-service
+      - redis
+    networks:
+      - sentinelas-net
+
+  # Python ML Service (FastAPI + gRPC)
+  ml-service:
+    build:
+      context: ./ml-service
+      dockerfile: Dockerfile
+    container_name: sentinelas-ml
+    ports:
+      - "${ML_HTTP_PORT:-8000}:8000"   # FastAPI REST
+      - "${ML_GRPC_PORT:-50051}:50051" # gRPC
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - TIMESCALE_URL=postgres://${TSDB_USER:-sentinelas}:${TSDB_PASSWORD:-sentinelas}@timescaledb:5432/${TSDB_DB:-sentinelas}
+      - MODEL_PATH=/app/saved_models
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - BATCH_SIZE=${BATCH_SIZE:-32}
+      - INFERENCE_TIMEOUT_MS=${INFERENCE_TIMEOUT_MS:-10}
+    volumes:
+      - ./ml-service/saved_models:/app/saved_models:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+    networks:
+      - sentinelas-net
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Redis for verdict caching and fast lookups
+  redis:
+    image: redis:7-alpine
+    container_name: sentinelas-redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - sentinelas-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+
+  # TimescaleDB for time-series analytics and correlation
+  timescaledb:
+    image: timescale/timescaledb:latest-pg15
+    container_name: sentinelas-tsdb
+    environment:
+      - POSTGRES_USER=${TSDB_USER:-sentinelas}
+      - POSTGRES_PASSWORD=${TSDB_PASSWORD:-sentinelas}
+      - POSTGRES_DB=${TSDB_DB:-sentinelas}
+    ports:
+      - "${TSDB_PORT:-5432}:5432"
+    volumes:
+      - tsdb_data:/var/lib/postgresql/data
+      - ./scripts/init_tsdb.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - sentinelas-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${TSDB_USER:-sentinelas} -d ${TSDB_DB:-sentinelas}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # React Dashboard for SOC operators
+  dashboard:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile
+    container_name: sentinelas-dashboard
+    ports:
+      - "${DASHBOARD_PORT:-3000}:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:${ML_HTTP_PORT:-8000}
+      - REACT_APP_WS_URL=ws://localhost:${ML_HTTP_PORT:-8000}/ws
+    depends_on:
+      - ml-service
+    networks:
+      - sentinelas-net
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+networks:
+  sentinelas-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+volumes:
+  caddy_data:
+  caddy_config:
+  redis_data:
+  tsdb_data:
