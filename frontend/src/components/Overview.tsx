@@ -8,7 +8,7 @@ export function Overview() {
   const { anomalies, pendingRules, modelHealth } = useDashboardStore();
   const [liveStats, setLiveStats] = useState<any>(null);
   const [trafficData, setTrafficData] = useState<any[]>([]);
-  
+
   // Fetch live stats
   useEffect(() => {
     const fetchStats = async () => {
@@ -19,24 +19,24 @@ export function Overview() {
         console.error('Failed to fetch stats:', err);
       }
     };
-    
+
     fetchStats();
     const interval = setInterval(fetchStats, 5000);
     return () => clearInterval(interval);
   }, []);
-  
+
   // Generate traffic data from anomalies
   useEffect(() => {
     if (anomalies.length > 0) {
       const hourlyData = new Map();
       const now = new Date();
-      
+
       for (let i = 23; i >= 0; i--) {
         const hour = new Date(now.getTime() - i * 60 * 60 * 1000);
         const key = hour.getHours();
         hourlyData.set(key, { time: `${key}:00`, requests: 0, anomalies: 0 });
       }
-      
+
       anomalies.forEach(a => {
         const date = new Date(a.timestamp);
         const hour = date.getHours();
@@ -46,7 +46,7 @@ export function Overview() {
           data.requests += 10;
         }
       });
-      
+
       setTrafficData(Array.from(hourlyData.values()));
     } else {
       setTrafficData(Array.from({ length: 24 }, (_, i) => ({
@@ -56,21 +56,21 @@ export function Overview() {
       })));
     }
   }, [anomalies]);
-  
+
   const severityData = [
     { name: 'Critical', value: anomalies.filter(a => a.severity === 'critical').length, color: '#ff4757' },
     { name: 'High', value: anomalies.filter(a => a.severity === 'high').length, color: '#ff6b6b' },
     { name: 'Medium', value: anomalies.filter(a => a.severity === 'medium').length, color: '#ffa502' },
     { name: 'Low', value: anomalies.filter(a => a.severity === 'low').length, color: '#2ed573' },
   ];
-  
+
   const categoryCount = new Map<string, number>();
   anomalies.forEach(a => {
     if (a.attack_category) {
       categoryCount.set(a.attack_category, (categoryCount.get(a.attack_category) || 0) + 1);
     }
   });
-  
+
   const topCategories = Array.from(categoryCount.entries())
     .map(([name, count]) => ({
       name: name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
@@ -79,15 +79,15 @@ export function Overview() {
     }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 5);
-  
+
   const reviewedAnomalies = anomalies.filter(a => a.status === 'reviewed');
-  const falsePositives = reviewedAnomalies.length > 0 
+  const falsePositives = reviewedAnomalies.length > 0
     ? (reviewedAnomalies.filter(a => a.status === 'reviewed').length / reviewedAnomalies.length * 100).toFixed(1)
     : '0.0';
-  
+
   const totalRequests = liveStats?.total_requests_24h || 0;
   const totalAnomalies = anomalies.length;
-  
+
   return (
     <div className="p-6 space-y-6 overflow-auto h-full" style={{ background: 'var(--bg-primary)' }}>
       {/* Stats Cards */}
@@ -117,7 +117,7 @@ export function Overview() {
           variant="success"
         />
       </div>
-      
+
       {/* Charts Row */}
       <div className="grid grid-cols-2 gap-6">
         <div className="chart-container">
@@ -128,16 +128,16 @@ export function Overview() {
             <AreaChart data={trafficData}>
               <defs>
                 <linearGradient id="trafficGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4}/>
-                  <stop offset="50%" stopColor="#a855f7" stopOpacity={0.2}/>
-                  <stop offset="95%" stopColor="#ec4899" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4} />
+                  <stop offset="50%" stopColor="#a855f7" stopOpacity={0.2} />
+                  <stop offset="95%" stopColor="#ec4899" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <XAxis dataKey="time" stroke="#6e7681" fontSize={10} tickLine={false} axisLine={false} />
               <YAxis stroke="#6e7681" fontSize={10} tickLine={false} axisLine={false} />
               <Tooltip
-                contentStyle={{ 
-                  backgroundColor: '#161b22', 
+                contentStyle={{
+                  backgroundColor: '#161b22',
                   border: '2px solid #3b82f6',
                   borderRadius: '8px',
                   boxShadow: '0 0 20px rgba(59, 130, 246, 0.3)'
@@ -154,7 +154,7 @@ export function Overview() {
             </AreaChart>
           </ResponsiveContainer>
         </div>
-        
+
         <div className="chart-container">
           <div className="chart-header">
             <h3 className="chart-title">Anomalies (24h)</h3>
@@ -171,8 +171,8 @@ export function Overview() {
               <XAxis dataKey="time" stroke="#6e7681" fontSize={10} tickLine={false} axisLine={false} />
               <YAxis stroke="#6e7681" fontSize={10} tickLine={false} axisLine={false} />
               <Tooltip
-                contentStyle={{ 
-                  backgroundColor: '#161b22', 
+                contentStyle={{
+                  backgroundColor: '#161b22',
                   border: '2px solid #f59e0b',
                   borderRadius: '8px',
                   boxShadow: '0 0 20px rgba(245, 158, 11, 0.3)'
@@ -190,12 +190,12 @@ export function Overview() {
           </ResponsiveContainer>
         </div>
       </div>
-      
+
       {/* Bottom Row */}
       <div className="grid grid-cols-3 gap-6">
         {/* Connected Services */}
         <ConnectedServices />
-        
+
         {/* Severity Distribution */}
         <div className="card">
           <div className="card-header">
@@ -205,12 +205,12 @@ export function Overview() {
             {severityData.map((item) => (
               <div key={item.name} className="score-bar">
                 <span className="score-label flex items-center gap-2">
-                  <span 
-                    className="severity-dot animate-pulse" 
-                    style={{ 
+                  <span
+                    className="severity-dot animate-pulse"
+                    style={{
                       backgroundColor: item.color,
                       boxShadow: `0 0 10px ${item.color}`,
-                    }} 
+                    }}
                   />
                   {item.name}
                 </span>
@@ -229,7 +229,7 @@ export function Overview() {
             ))}
           </div>
         </div>
-        
+
         {/* Top Attack Categories */}
         <div className="card">
           <div className="card-header">
@@ -253,7 +253,7 @@ export function Overview() {
           </div>
         </div>
       </div>
-      
+
       {/* ML Model Status Row */}
       <div className="grid grid-cols-1 gap-6">
         {/* Model Status */}
@@ -271,21 +271,21 @@ export function Overview() {
                 const colors = ['#10b981', '#3b82f6', '#a855f7'];
                 const modelColor = colors[idx % colors.length];
                 return (
-                  <div 
-                    key={model.model_name} 
-                    className="flex items-center gap-3 p-3 transition-all hover:scale-105" 
-                    style={{ 
-                      background: `linear-gradient(135deg, ${modelColor}15, ${modelColor}05)`, 
+                  <div
+                    key={model.model_name}
+                    className="flex items-center gap-3 p-3 transition-all hover:scale-105"
+                    style={{
+                      background: `linear-gradient(135deg, ${modelColor}15, ${modelColor}05)`,
                       borderRadius: 'var(--radius-md)',
                       border: `1px solid ${modelColor}40`,
                     }}
                   >
-                    <div 
-                      className="w-2 h-2 rounded-full animate-pulse" 
-                      style={{ 
+                    <div
+                      className="w-2 h-2 rounded-full animate-pulse"
+                      style={{
                         backgroundColor: modelColor,
                         boxShadow: `0 0 10px ${modelColor}`,
-                      }} 
+                      }}
                     />
                     <span className="text-sm flex-1 font-medium" style={{ color: 'var(--text-secondary)' }}>{model.model_name}</span>
                     <span className="text-xs font-mono font-semibold" style={{ color: modelColor }}>
@@ -293,7 +293,7 @@ export function Overview() {
                     </span>
                   </div>
                 );
-              })}}
+              })}
             </div>
           </div>
           <div className="card-footer">
@@ -338,9 +338,9 @@ function StatCard({
   };
 
   return (
-    <div 
-      className={`stat-card ${variant} border-gradient-animated`} 
-      style={{ 
+    <div
+      className={`stat-card ${variant} border-gradient-animated`}
+      style={{
         background: gradientColors[variant],
         borderColor: borderColors[variant],
       }}
