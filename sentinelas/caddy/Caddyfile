@@ -1,0 +1,69 @@
+# Caddyfile for Sentinelas WAF
+# TLS termination + request proxying through Coraza WAF
+
+{
+    admin off
+    log {
+        level {$LOG_LEVEL:info}
+        format json
+    }
+}
+
+:80 {
+    # Health check endpoint
+    handle /health {
+        respond "OK" 200
+    }
+
+    # Main WAF handler - all requests go through Coraza
+    handle {
+        # Enable Coraza WAF module
+        route {
+            # Coraza WAF inspection
+            coraza_waf {
+                # Load OWASP Core Rule Set
+                include /etc/coraza/crs-setup.conf
+                include /etc/coraza/rules/*.conf
+                
+                # Sentinelas custom rules
+                include /etc/coraza/sentinelas/*.conf
+                
+                # External ML integration via gRPC
+                ml_service {
+                    addr {$ML_SERVICE_HOST:ml-service}:{$ML_SERVICE_PORT:50051}
+                    timeout 10ms
+                    shadow_mode {$SHADOW_MODE:false}
+                }
+            }
+            
+            # Proxy to upstream backend
+            reverse_proxy {$UPSTREAM_HOST:localhost}:{$UPSTREAM_PORT:8081}
+        }
+    }
+}
+
+:443 {
+    tls internal
+
+    handle /health {
+        respond "OK" 200
+    }
+
+    handle {
+        route {
+            coraza_waf {
+                include /etc/coraza/crs-setup.conf
+                include /etc/coraza/rules/*.conf
+                include /etc/coraza/sentinelas/*.conf
+                
+                ml_service {
+                    addr {$ML_SERVICE_HOST:ml-service}:{$ML_SERVICE_PORT:50051}
+                    timeout 10ms
+                    shadow_mode {$SHADOW_MODE:false}
+                }
+            }
+            
+            reverse_proxy {$UPSTREAM_HOST:localhost}:{$UPSTREAM_PORT:8081}
+        }
+    }
+}
