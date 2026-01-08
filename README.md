@@ -48,6 +48,27 @@ Then go to http://localhost:3000 and you should see the dashboard.
 docker-compose up -d
 ```
 
+### With public access (ngrok)
+
+Want to share your VARDAx instance or test webhooks? Use ngrok:
+
+```bash
+# Setup ngrok (one-time)
+./setup-ngrok.sh
+./configure-ngrok.sh
+
+# Start VARDAx with public tunnels
+./start-vardax-with-ngrok.sh --ngrok
+```
+
+Your VARDAx will be accessible via a public URL like `https://abc123.ngrok.io`. Perfect for:
+- Demos and client presentations
+- Testing webhook integrations
+- Remote team access
+- Mobile device testing
+
+See [NGROK_SETUP.md](NGROK_SETUP.md) for detailed setup instructions.
+
 ### Manual way (if you enjoy pain)
 
 Backend:
