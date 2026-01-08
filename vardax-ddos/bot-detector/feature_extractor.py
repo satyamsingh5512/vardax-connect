@@ -272,7 +272,8 @@ class FeatureExtractor:
                     ip_class = 0.5  # Class B
                 else:
                     ip_class = 1.0  # Class C
-        except:
+        except (ValueError, IndexError, AttributeError) as e:
+            # Invalid IP format or parsing error
             is_ipv6 = False
             first_octet = 0
             ip_class = 0
@@ -394,7 +395,8 @@ class FeatureExtractor:
             
             device_map = {'iPhone': 0.2, 'iPad': 0.4, 'Mac': 0.6, 'Other': 0.8}
             device_family = device_map.get(ua.device.family, 1.0)
-        except:
+        except (AttributeError, ImportError) as e:
+            # User agent parsing failed or library not available
             is_mobile = 0.0
             is_tablet = 0.0
             is_pc = 0.0
@@ -475,7 +477,8 @@ class FeatureExtractor:
             try:
                 result = self.asn_reader.get(ip)
                 return result.get('autonomous_system_number', 0) if result else 0
-            except:
+            except (KeyError, AttributeError, Exception) as e:
+                # ASN lookup failed
                 pass
         return 0
     
