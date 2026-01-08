@@ -170,7 +170,18 @@ async def get_recent_alerts(limit: int = 100):
     
     try:
         alerts = await state.redis_client.lrange("alerts:recent", 0, limit - 1)
-        return {"alerts": [eval(a) if not isinstance(a, dict) else a for a in alerts]}  # Use eval carefully, move to json
+        parsed_alerts = []
+        for alert in alerts:
+            try:
+                if isinstance(alert, dict):
+                    parsed_alerts.append(alert)
+                elif isinstance(alert, str):
+                    import json
+                    parsed_alerts.append(json.loads(alert))
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse alert JSON: {e}")
+                continue
+        return {"alerts": parsed_alerts}
     except Exception as e:
         logger.error(f"Error fetching alerts: {e}")
         return {"alerts": [], "error": str(e)}
@@ -325,8 +336,9 @@ async def get_pending_rules():
         for raw in raw_rules.values():
             try:
                 rules.append(json.loads(raw))
-            except:
-                pass
+            except json.JSONDecodeError as e:
+                logger.warning(f"Failed to parse rule JSON: {e}")
+                continue
         return rules
     except Exception as e:
         logger.error(f"Error fetching pending rules: {e}")
