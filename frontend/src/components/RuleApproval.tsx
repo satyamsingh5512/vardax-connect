@@ -49,7 +49,7 @@ export function RuleApproval() {
       await api.approveRule(ruleId, 'approve');
       updateRuleStatus(ruleId, 'approved');
       if (selectedRule?.rule_id === ruleId) {
-        setSelectedRule(prev => prev ? { ...prev, status: 'approved' } : null);
+        setSelectedRule((prev: RuleRecommendation | null) => prev ? { ...prev, status: 'approved' } : null);
       }
     } catch (e) {
       console.error('Failed to approve rule:', e);
@@ -61,7 +61,7 @@ export function RuleApproval() {
       await api.approveRule(ruleId, 'reject');
       updateRuleStatus(ruleId, 'rejected');
       if (selectedRule?.rule_id === ruleId) {
-        setSelectedRule(prev => prev ? { ...prev, status: 'rejected' } : null);
+        setSelectedRule((prev: RuleRecommendation | null) => prev ? { ...prev, status: 'rejected' } : null);
       }
     } catch (e) {
       console.error('Failed to reject rule:', e);
