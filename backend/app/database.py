@@ -459,8 +459,13 @@ class DatabaseManager:
             if key in d and d[key]:
                 try:
                     d[key.replace('_json', '')] = json.loads(d[key])
-                except:
-                    pass
+                except json.JSONDecodeError as e:
+                    logger.warning(f"Failed to parse JSON for key {key}: {e}")
+                    # Keep the original string value
+                    d[key.replace('_json', '')] = d[key]
+                except Exception as e:
+                    logger.error(f"Unexpected error parsing JSON for key {key}: {e}")
+                    d[key.replace('_json', '')] = d[key]
                 del d[key]
         
         return d
