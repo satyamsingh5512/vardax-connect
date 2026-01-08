@@ -10,14 +10,26 @@ from functools import lru_cache
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
     
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Validate critical security settings
+        if self.jwt_secret == "change-me-in-production":
+            raise ValueError(
+                "VARDAX_JWT_SECRET environment variable must be set to a secure value. "
+                "Generate one with: python -c 'import secrets; print(secrets.token_urlsafe(32))'"
+            )
+    
     # Application
     app_name: str = "VARDAx"
     debug: bool = False
     api_prefix: str = "/api/v1"
     
-    # CORS - Allow all origins for development/ngrok
+    # CORS - Restrict origins in production
     cors_origins: list = [
-        "*",  # Allow all for ngrok tunnels
+        "http://localhost:3000",  # React dev server
+        "http://127.0.0.1:3000",
+        "https://vardax.vercel.app",  # Production frontend
+        # Add your production domains here
     ]
     
     # Database
@@ -43,7 +55,7 @@ class Settings(BaseSettings):
     batch_size: int = 32
     
     # Security
-    jwt_secret: str = os.getenv("VARDAX_JWT_SECRET", "change-me-in-production")
+    jwt_secret: str = os.getenv("VARDAX_JWT_SECRET", "")
     jwt_algorithm: str = "HS256"
     jwt_expiry_hours: int = 24
     
