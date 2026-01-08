@@ -76,14 +76,14 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS middleware for dashboard
+# CORS middleware - Allow external websites to connect to this API
 debug_mode = settings.debug or os.getenv("VARDAX_DEBUG", "false").lower() == "true"
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"] if debug_mode else settings.cors_origins,
+    allow_origins=["*"],  # Allow all origins for ngrok tunnel access
     allow_credentials=False,  # Disable credentials for security
-    allow_methods=["GET", "POST", "PUT", "DELETE"],  # Specific methods only
-    allow_headers=["Content-Type", "Authorization", "ngrok-skip-browser-warning"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Include OPTIONS for preflight
+    allow_headers=["Content-Type", "Authorization", "ngrok-skip-browser-warning", "X-Requested-With"],
     expose_headers=["Content-Type"],
 )
 
@@ -96,35 +96,17 @@ app.include_router(proxy_router)  # Proxy routes at root level
 
 @app.get("/")
 async def root():
-    """Health check endpoint with HTML for browser visits."""
-    from fastapi.responses import HTMLResponse
-    return HTMLResponse(content="""
-<!DOCTYPE html>
-<html>
-<head>
-    <title>VARDAx API</title>
-    <style>
-        body { font-family: system-ui; background: #0f172a; color: #e2e8f0; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .container { text-align: center; padding: 40px; }
-        h1 { color: #22d3ee; font-size: 3rem; margin-bottom: 10px; }
-        p { color: #94a3b8; margin: 10px 0; }
-        .status { background: #166534; color: #4ade80; padding: 8px 20px; border-radius: 20px; display: inline-block; margin: 20px 0; }
-        a { color: #22d3ee; }
-        code { background: #1e293b; padding: 4px 8px; border-radius: 4px; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🛡️ VARDAx</h1>
-        <p>ML-Powered WAF Anomaly Detection System</p>
-        <div class="status">✓ API Online</div>
-        <p>API Endpoint: <code>/api/v1/</code></p>
-        <p>Health Check: <a href="/health">/health</a></p>
-        <p>Stats: <a href="/api/v1/stats/live">/api/v1/stats/live</a></p>
-    </div>
-</body>
-</html>
-    """, status_code=200)
+    """API status endpoint."""
+    from fastapi.responses import JSONResponse
+    return JSONResponse(content={
+        "service": "VARDAx ML-Powered WAF",
+        "status": "online",
+        "version": "2.2.0",
+        "api_endpoint": "/api/v1/",
+        "websocket": "/api/v1/ws/anomalies",
+        "health_check": "/health",
+        "documentation": "/docs"
+    })
 
 
 @app.get("/health")
