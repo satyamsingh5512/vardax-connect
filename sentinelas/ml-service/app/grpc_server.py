@@ -389,8 +389,9 @@ class WAFMLServiceServicer(pb2_grpc.WAFMLServiceServicer):
                 # Handle single quotes from string representation
                 meta_str = rule.metadata.replace("'", '"')
                 metadata = json.loads(meta_str)
-        except:
-            pass
+        except (json.JSONDecodeError, AttributeError) as e:
+            logger.warning(f"Failed to parse rule metadata: {e}")
+            metadata = {}
             
         return {
             "has_rule": rule.has_rule,
