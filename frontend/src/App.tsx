@@ -97,7 +97,6 @@ const App: React.FC = () => {
               transition={{ duration: 0.5, delay: 0.2 }}
             >
               <Header 
-                sidebarCollapsed={appState.sidebarCollapsed}
                 onToggleSidebar={toggleSidebar}
                 connectionStatus={connectionStatus}
               />
