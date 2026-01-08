@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
   Search, 
   Bell, 
@@ -9,7 +9,6 @@ import {
   Menu,
   Wifi,
   WifiOff,
-  Shield,
   Activity,
   AlertCircle,
   CheckCircle,
@@ -20,7 +19,6 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { useStore } from '../../store';
 
 interface HeaderProps {
-  sidebarCollapsed: boolean;
   onToggleSidebar: () => void;
   connectionStatus: 'connected' | 'connecting' | 'disconnected';
 }
@@ -35,12 +33,11 @@ interface NotificationItem {
 }
 
 const Header: React.FC<HeaderProps> = ({ 
-  sidebarCollapsed, 
   onToggleSidebar, 
   connectionStatus 
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [notifications, setNotifications] = useState<NotificationItem[]>([
+  const [notifications] = useState<NotificationItem[]>([
     {
       id: '1',
       type: 'critical',
