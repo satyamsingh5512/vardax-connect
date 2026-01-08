@@ -16,6 +16,7 @@ import sys
 import time
 import random
 import string
+import socket
 import asyncio
 import argparse
 import subprocess
@@ -228,7 +229,8 @@ class SlowlorisAttack(AttackSimulator):
                     # Send partial header to keep connection alive
                     s.send(f"X-Header-{random.randint(1,1000)}: {random.randint(1,1000)}\r\n".encode())
                     self._update_stats(True, 30)
-                except:
+                except (ConnectionError, OSError, BrokenPipeError) as e:
+                    # Connection failed, remove socket
                     self.sockets.remove(s)
                     self._update_stats(False)
                     
@@ -240,7 +242,8 @@ class SlowlorisAttack(AttackSimulator):
                         new_s.send(f"GET / HTTP/1.1\r\n".encode())
                         new_s.send(f"Host: {self.config.target_host}\r\n".encode())
                         self.sockets.append(new_s)
-                    except:
+                    except (ConnectionError, OSError, socket.error) as e:
+                        # Failed to create new connection
                         pass
             
             time.sleep(10)  # Send headers every 10 seconds
@@ -249,7 +252,8 @@ class SlowlorisAttack(AttackSimulator):
         for s in self.sockets:
             try:
                 s.close()
-            except:
+            except (OSError, AttributeError):
+                # Socket already closed or invalid
                 pass
 
 
@@ -383,7 +387,8 @@ class MixedTrafficGenerator:
         try:
             async with session.get(f"{url}{random.choice(paths)}", headers=headers) as resp:
                 await resp.read()
-        except:
+        except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+            # Request failed
             pass
     
     async def _send_attack_request(self, session):
@@ -412,7 +417,8 @@ class MixedTrafficGenerator:
         try:
             async with session.get(f"{url}{random.choice(attack_paths)}", headers=headers) as resp:
                 await resp.read()
-        except:
+        except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+            # Attack request failed
             pass
     
     def stop(self):
