@@ -1,124 +1,207 @@
-import { useEffect, useState } from 'react';
-import { useDashboardStore } from './store';
-import { api, connectWebSocket } from './api';
-import { ThemeProvider } from './contexts/ThemeContext';
-import { Header } from './components/Header';
-import { Navigation } from './components/Navigation';
-import { Overview } from './components/Overview';
-import { LiveTraffic } from './components/LiveTraffic';
-import { AnomalyList } from './components/AnomalyList';
-import { RuleApproval } from './components/RuleApproval';
-import { ModelHealth } from './components/ModelHealth';
-import { ReplayTimeline } from './components/ReplayTimeline';
-import { TrafficHeatmap } from './components/TrafficHeatmap';
-import { GeoMap } from './components/GeoMap';
-import { RuleSimulator } from './components/RuleSimulator';
-import { Settings } from './components/Settings';
-import { LoadingScreen } from './components/LoadingScreen';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Toaster } from 'react-hot-toast';
 
-function AppContent() {
-  const [isLoading, setIsLoading] = useState(true);
-  const {
-    activeTab,
-    setAnomalies,
-    addAnomaly,
-    setPendingRules,
-    setTrafficMetrics,
-    setModelHealth,
-    setWsConnected,
-  } = useDashboardStore();
+// Layout Components
+import Sidebar from './components/layout/Sidebar';
+import Header from './components/layout/Header';
+import LoadingScreen from './components/common/LoadingScreen';
 
-  // Load initial data
+// Page Components
+import Dashboard from './pages/Dashboard';
+import ThreatIntelligence from './pages/ThreatIntelligence';
+import Analytics from './pages/Analytics';
+import RuleManagement from './pages/RuleManagement';
+import Settings from './pages/Settings';
+import Reports from './pages/Reports';
+
+// Store
+import { useStore } from './store';
+
+// Types
+interface AppState {
+  isLoading: boolean;
+  sidebarCollapsed: boolean;
+  currentPage: string;
+}
+
+const App: React.FC = () => {
+  const [appState, setAppState] = useState<AppState>({
+    isLoading: true,
+    sidebarCollapsed: false,
+    currentPage: 'dashboard'
+  });
+
+  const { isConnected, connectionStatus } = useStore();
+
+  // Initialize app
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [anomalies, rules, metrics, health] = await Promise.all([
-          api.getAnomalies(),
-          api.getPendingRules(),
-          api.getTrafficMetrics(),
-          api.getModelHealth(),
-        ]);
+    const initializeApp = async () => {
+      // Simulate initialization process
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      setAppState(prev => ({ ...prev, isLoading: false }));
+    };
 
-        setAnomalies(anomalies);
-        setPendingRules(rules);
-        setTrafficMetrics(metrics);
-        setModelHealth(health);
-      } catch (e) {
-        console.error('Failed to load initial data:', e);
-        // Initialize with empty data - will show "No data" states
-        setAnomalies([]);
-        setPendingRules([]);
+    initializeApp();
+  }, []);
+
+  // Handle sidebar toggle
+  const toggleSidebar = () => {
+    setAppState(prev => ({ 
+      ...prev, 
+      sidebarCollapsed: !prev.sidebarCollapsed 
+    }));
+  };
+
+  // Show loading screen during initialization
+  if (appState.isLoading) {
+    return <LoadingScreen />;
+  }
+
+  return (
+    <Router>
+      <div className="min-h-screen bg-enterprise-bg text-enterprise-text font-sans">
+        {/* Background Effects */}
+        <div className="fixed inset-0 bg-gradient-mesh opacity-30 pointer-events-none" />
+        <div className="fixed inset-0 bg-gradient-radial from-brand-primary/5 via-transparent to-transparent pointer-events-none" />
+        
+        {/* Main Layout */}
+        <div className="relative flex h-screen overflow-hidden">
+          {/* Sidebar */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={appState.sidebarCollapsed ? 'collapsed' : 'expanded'}
+              initial={{ x: -300, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: -300, opacity: 0 }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              className={`
+                ${appState.sidebarCollapsed ? 'w-16' : 'w-64'} 
+                flex-shrink-0 transition-all duration-300 ease-in-out
+              `}
+            >
+              <Sidebar 
+                collapsed={appState.sidebarCollapsed}
+                onToggle={toggleSidebar}
+              />
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Main Content Area */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Header */}
+            <motion.div
+              initial={{ y: -50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+            >
+              <Header 
+                sidebarCollapsed={appState.sidebarCollapsed}
+                onToggleSidebar={toggleSidebar}
+                connectionStatus={connectionStatus}
+              />
+            </motion.div>
+
+            {/* Page Content */}
+            <main className="flex-1 overflow-auto bg-enterprise-surface/50 backdrop-blur-sm">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.3 }}
+                className="h-full"
+              >
+                <Routes>
+                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/threats" element={<ThreatIntelligence />} />
+                  <Route path="/analytics" element={<Analytics />} />
+                  <Route path="/rules" element={<RuleManagement />} />
+                  <Route path="/reports" element={<Reports />} />
+                  <Route path="/settings" element={<Settings />} />
+                </Routes>
+              </motion.div>
+            </main>
+          </div>
+        </div>
+
+        {/* Connection Status Indicator */}
+        <AnimatePresence>
+          {!isConnected && (
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 50 }}
+              className="fixed bottom-4 right-4 z-50"
+            >
+              <div className="bg-status-error/90 backdrop-blur-sm text-white px-4 py-2 rounded-lg shadow-enterprise-lg border border-status-error/20">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                  <span className="text-sm font-medium">Connection Lost</span>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Toast Notifications */}
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: '#1a1d23',
+              color: '#ffffff',
+              border: '1px solid #2d323c',
+              borderRadius: '0.75rem',
+              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)',
+            },
+            success: {
+              iconTheme: {
+                primary: '#00b894',
+                secondary: '#ffffff',
+              },
+            },
+            error: {
+              iconTheme: {
+                primary: '#e84393',
+                secondary: '#ffffff',
+              },
+            },
+          }}
+        />
+
+        {/* Global Keyboard Shortcuts */}
+        <GlobalKeyboardShortcuts onToggleSidebar={toggleSidebar} />
+      </div>
+    </Router>
+  );
+};
+
+// Global Keyboard Shortcuts Component
+const GlobalKeyboardShortcuts: React.FC<{ onToggleSidebar: () => void }> = ({ 
+  onToggleSidebar 
+}) => {
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Cmd/Ctrl + B to toggle sidebar
+      if ((event.metaKey || event.ctrlKey) && event.key === 'b') {
+        event.preventDefault();
+        onToggleSidebar();
+      }
+      
+      // Cmd/Ctrl + K for command palette (future feature)
+      if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
+        event.preventDefault();
+        // TODO: Open command palette
       }
     };
 
-    loadData();
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onToggleSidebar]);
 
-    // Refresh metrics every 5 seconds
-    const interval = setInterval(async () => {
-      try {
-        const metrics = await api.getTrafficMetrics();
-        setTrafficMetrics(metrics);
-      } catch (e) {
-        // Ignore errors for periodic refresh
-      }
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // Connect WebSocket for real-time updates
-  useEffect(() => {
-    const ws = connectWebSocket(
-      (anomaly) => addAnomaly(anomaly),
-      () => setWsConnected(true),
-      () => setWsConnected(false)
-    );
-
-    return () => ws.close();
-  }, []);
-
-  return (
-    <>
-      {isLoading && <LoadingScreen onLoadComplete={() => setIsLoading(false)} />}
-
-      <div className="dashboard-layout">
-        <Header />
-        <Navigation />
-        <main className="dashboard-main">
-          {activeTab === 'overview' && <Overview />}
-          {activeTab === 'traffic' && <LiveTraffic />}
-          {activeTab === 'anomalies' && <AnomalyList />}
-          {activeTab === 'rules' && <RuleApproval />}
-          {activeTab === 'models' && <ModelHealth />}
-          {activeTab === 'replay' && <ReplayTimeline />}
-          {activeTab === 'heatmap' && (
-            <div className="p-6 grid grid-cols-2 gap-6" style={{ background: 'var(--bg-primary)', height: '100%', overflow: 'auto' }}>
-              <TrafficHeatmap />
-              <GeoMap />
-            </div>
-          )}
-          {activeTab === 'simulate' && <RuleSimulator />}
-          {activeTab === 'settings' && <Settings />}
-        </main>
-      </div>
-    </>
-  );
-}
-
-import { LandingPage } from './components/LandingPage';
-
-function App() {
-  const [showLanding, setShowLanding] = useState(true);
-
-  return (
-    <ThemeProvider>
-      {showLanding ? (
-        <LandingPage onLaunch={() => setShowLanding(false)} />
-      ) : (
-        <AppContent />
-      )}
-    </ThemeProvider>
-  );
-}
+  return null;
+};
 
 export default App;
