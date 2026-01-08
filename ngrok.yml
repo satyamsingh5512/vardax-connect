@@ -1,0 +1,35 @@
+# VARDAx Ngrok Configuration
+# Copy this to ~/.config/ngrok/ngrok.yml after adding your auth token
+
+version: "2"
+
+# Tunnels configuration
+tunnels:
+  vardax-frontend:
+    proto: http
+    addr: 5173
+    subdomain: vardax-frontend  # Only works with paid plans
+    inspect: true
+    bind_tls: true
+    
+  vardax-backend:
+    proto: http
+    addr: 8000
+    subdomain: vardax-api  # Only works with paid plans
+    inspect: true
+    bind_tls: true
+    
+  vardax-full:
+    proto: http
+    addr: 5173
+    inspect: true
+    bind_tls: true
+
+# Web interface configuration
+web_addr: localhost:4040
+console_ui: true
+
+# Logging
+log_level: info
+log_format: logfmt
+log: /tmp/ngrok.log
