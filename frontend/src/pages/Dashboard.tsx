@@ -4,12 +4,9 @@ import {
   Shield, 
   Activity, 
   AlertTriangle, 
-  TrendingUp, 
   Globe, 
   Zap,
   Eye,
-  Clock,
-  Users,
   Server
 } from 'lucide-react';
 
@@ -22,7 +19,7 @@ import SystemHealth from '../components/dashboard/SystemHealth';
 import QuickActions from '../components/dashboard/QuickActions';
 
 // Store
-import { useStore } from '../store';
+// import { useStore } from '../store';
 
 // Types
 interface DashboardMetric {
@@ -37,7 +34,7 @@ interface DashboardMetric {
 }
 
 const Dashboard: React.FC = () => {
-  const { stats, isConnected } = useStore();
+  // const { connectionStatus } = useStore();
   const [timeRange, setTimeRange] = useState<'1h' | '24h' | '7d' | '30d'>('24h');
 
   // Mock real-time metrics (in production, these would come from your store/API)
