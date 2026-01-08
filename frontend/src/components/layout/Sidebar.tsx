@@ -4,15 +4,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Shield, 
   BarChart3, 
-  Zap, 
   Settings, 
   FileText, 
   AlertTriangle,
-  Activity,
   ChevronLeft,
   ChevronRight,
   Layers,
-  Globe,
   Lock
 } from 'lucide-react';
 import { clsx } from 'clsx';
