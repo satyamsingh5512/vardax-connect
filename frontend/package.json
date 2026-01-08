@@ -1,6 +1,6 @@
 {
   "name": "vardax-dashboard",
-  "version": "2.0.0-advanced",
+  "version": "2.2.0",
   "description": "VARDAx Advanced Enterprise Security Dashboard",
   "type": "module",
   "scripts": {
