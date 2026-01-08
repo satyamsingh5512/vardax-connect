@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Toaster } from 'react-hot-toast';
+import { Toaster } from 'sonner';
 
 // Layout Components
 import Sidebar from './components/layout/Sidebar';
 import Header from './components/layout/Header';
 import LoadingScreen from './components/common/LoadingScreen';
+
+// Advanced Components
+import { CommandPalette } from './components/advanced/CommandPalette';
+import { useNotifications, createNotification } from './components/advanced/NotificationSystem';
+import { useModalManager } from './components/advanced/ModalSystem';
 
 // Page Components
 import Dashboard from './pages/Dashboard';
@@ -34,6 +39,8 @@ const App: React.FC = () => {
   });
 
   const { isConnected, connectionStatus } = useStore();
+  const notifications = useNotifications();
+  const modalManager = useModalManager();
 
   // Initialize app
   useEffect(() => {
@@ -41,6 +48,28 @@ const App: React.FC = () => {
       // Simulate initialization process
       await new Promise(resolve => setTimeout(resolve, 2000));
       setAppState(prev => ({ ...prev, isLoading: false }));
+      
+      // Add demo notifications
+      setTimeout(() => {
+        notifications.addNotification(createNotification(
+          'security',
+          'New Threat Detected',
+          'Suspicious activity from IP 192.168.1.100',
+          {
+            persistent: true,
+            action: {
+              label: 'Investigate',
+              onClick: () => console.log('Investigating threat...')
+            }
+          }
+        ));
+        
+        notifications.addNotification(createNotification(
+          'success',
+          'System Update Complete',
+          'All security modules have been updated successfully'
+        ));
+      }, 1000);
     };
 
     initializeApp();
@@ -124,6 +153,10 @@ const App: React.FC = () => {
           </div>
         </div>
 
+        {/* Advanced Components */}
+        <CommandPalette />
+        <modalManager.ModalContainer />
+
         {/* Connection Status Indicator */}
         <AnimatePresence>
           {!isConnected && (
@@ -154,18 +187,6 @@ const App: React.FC = () => {
               border: '1px solid #2d323c',
               borderRadius: '0.75rem',
               boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)',
-            },
-            success: {
-              iconTheme: {
-                primary: '#00b894',
-                secondary: '#ffffff',
-              },
-            },
-            error: {
-              iconTheme: {
-                primary: '#e84393',
-                secondary: '#ffffff',
-              },
             },
           }}
         />

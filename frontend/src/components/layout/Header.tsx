@@ -34,10 +34,10 @@ interface NotificationItem {
 
 const Header: React.FC<HeaderProps> = ({ 
   onToggleSidebar, 
-  connectionStatus 
+  connectionStatus
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [notifications] = useState<NotificationItem[]>([
+  const [demoNotifications] = useState<NotificationItem[]>([
     {
       id: '1',
       type: 'critical',
@@ -65,7 +65,7 @@ const Header: React.FC<HeaderProps> = ({
   ]);
 
   const { stats } = useStore();
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = demoNotifications.filter((n: NotificationItem) => !n.read).length;
 
   // Real-time clock
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -241,7 +241,7 @@ const Header: React.FC<HeaderProps> = ({
                 </div>
 
                 <div className="max-h-80 overflow-y-auto space-y-1">
-                  {notifications.map((notification) => (
+                  {demoNotifications.map((notification: NotificationItem) => (
                     <motion.div
                       key={notification.id}
                       initial={{ opacity: 0, x: -20 }}
