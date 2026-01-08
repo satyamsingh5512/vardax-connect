@@ -3,16 +3,18 @@ VARDAx - ML-Powered WAF Anomaly Detection System
 
 Main FastAPI application entry point.
 """
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
+import os
 
 from .api.routes import router, ws_router
 from .api.routes_extended import router as extended_router
 from .api.proxy import router as proxy_router
 from .config import get_settings
 from .ml.models import AnomalyDetector
+from .security import check_rate_limit
 
 # Configure logging
 logging.basicConfig(
@@ -26,7 +28,7 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application lifespan handler."""
+    """Application lifespan handler with graceful shutdown."""
     # Startup
     logger.info("Starting VARDAx...")
     
@@ -42,6 +44,28 @@ async def lifespan(app: FastAPI):
     
     # Shutdown
     logger.info("Shutting down VARDAx...")
+    
+    # Close database connections
+    try:
+        db = get_db()
+        if hasattr(db, 'close'):
+            db.close()
+        logger.info("Database connections closed")
+    except Exception as e:
+        logger.error(f"Error closing database: {e}")
+    
+    # Close Redis connections if any
+    try:
+        settings = get_settings()
+        if settings.redis_url:
+            import redis
+            r = redis.from_url(settings.redis_url)
+            r.close()
+        logger.info("Redis connections closed")
+    except Exception as e:
+        logger.error(f"Error closing Redis: {e}")
+    
+    logger.info("VARDAx shutdown complete")
 
 
 # Create FastAPI app
@@ -53,19 +77,20 @@ app = FastAPI(
 )
 
 # CORS middleware for dashboard
+debug_mode = settings.debug or os.getenv("VARDAX_DEBUG", "false").lower() == "true"
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*", "ngrok-skip-browser-warning"],
-    expose_headers=["*"],
+    allow_origins=["*"] if debug_mode else settings.cors_origins,
+    allow_credentials=False,  # Disable credentials for security
+    allow_methods=["GET", "POST", "PUT", "DELETE"],  # Specific methods only
+    allow_headers=["Content-Type", "Authorization", "ngrok-skip-browser-warning"],
+    expose_headers=["Content-Type"],
 )
 
-# Include routers
-app.include_router(router, prefix="/api/v1")
-app.include_router(ws_router, prefix="/api/v1")
-app.include_router(extended_router, prefix="/api/v1")
+# Include routers with rate limiting on API endpoints
+app.include_router(router, prefix="/api/v1", dependencies=[Depends(check_rate_limit)])
+app.include_router(ws_router, prefix="/api/v1")  # WebSocket doesn't need rate limiting
+app.include_router(extended_router, prefix="/api/v1", dependencies=[Depends(check_rate_limit)])
 app.include_router(proxy_router)  # Proxy routes at root level
 
 
@@ -104,8 +129,11 @@ async def root():
 
 @app.get("/health")
 async def health():
-    """Detailed health check."""
-    return {
+    """Detailed health check with dependency verification."""
+    from .database import get_db
+    from .config import get_settings
+    
+    health_status = {
         "status": "healthy",
         "components": {
             "api": "up",
@@ -113,6 +141,30 @@ async def health():
             "feature_extractor": "ready"
         }
     }
+    
+    # Check database connectivity
+    try:
+        db = get_db()
+        # Try a simple query
+        db._execute("SELECT 1")
+        health_status["components"]["database"] = "connected"
+    except Exception as e:
+        health_status["components"]["database"] = f"error: {str(e)}"
+        health_status["status"] = "degraded"
+    
+    # Check Redis connectivity (if configured)
+    settings = get_settings()
+    if settings.redis_url:
+        try:
+            import redis
+            r = redis.from_url(settings.redis_url)
+            r.ping()
+            health_status["components"]["redis"] = "connected"
+        except Exception as e:
+            health_status["components"]["redis"] = f"error: {str(e)}"
+            health_status["status"] = "degraded"
+    
+    return health_status
 
 
 # Compatibility endpoints for external services
