@@ -462,7 +462,8 @@ class WAFRuleEngine:
             import base64
             try:
                 return base64.b64decode(value).decode('utf-8', errors='ignore')
-            except:
+            except (ValueError, UnicodeDecodeError, base64.binascii.Error) as e:
+                # Invalid base64 or decoding failed
                 return value
         elif transform == "removewhitespace":
             return re.sub(r'\s+', '', value)
