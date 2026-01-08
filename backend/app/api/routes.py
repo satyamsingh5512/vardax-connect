@@ -770,7 +770,8 @@ async def websocket_anomalies(websocket: WebSocket):
         while True:
             await websocket.receive_text()
     except WebSocketDisconnect:
-        connected_websockets.remove(websocket)
+        if websocket in connected_websockets:
+            connected_websockets.remove(websocket)
 
 
 @ws_router.websocket("/ws/traffic")
