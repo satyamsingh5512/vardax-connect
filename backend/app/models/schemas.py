@@ -2,10 +2,11 @@
 Pydantic schemas for API request/response validation.
 Clean, typed data structures for the entire system.
 """
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
+import ipaddress
 
 
 # ============================================================================
@@ -48,9 +49,33 @@ class TrafficRequest(BaseModel):
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     
     # Client info
-    client_ip: str
-    client_port: int
-    user_agent: Optional[str] = None
+    client_ip: str = Field(..., description="Client IP address")
+    client_port: int = Field(..., ge=1, le=65535, description="Client port number")
+    user_agent: Optional[str] = Field(None, max_length=1000)
+    
+    @validator('client_ip')
+    def validate_ip_address(cls, v):
+        """Validate that client_ip is a valid IP address."""
+        try:
+            ipaddress.ip_address(v)
+            return v
+        except ValueError:
+            raise ValueError(f"Invalid IP address: {v}")
+    
+    @validator('method')
+    def validate_http_method(cls, v):
+        """Validate HTTP method."""
+        valid_methods = {'GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'OPTIONS', 'PATCH', 'TRACE'}
+        if v.upper() not in valid_methods:
+            raise ValueError(f"Invalid HTTP method: {v}")
+        return v.upper()
+    
+    @validator('uri')
+    def validate_uri_length(cls, v):
+        """Validate URI length to prevent extremely long URIs."""
+        if len(v) > 8192:  # 8KB limit
+            raise ValueError("URI too long (max 8192 characters)")
+        return v
     
     # Request details
     method: str  # GET, POST, etc.
