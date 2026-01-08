@@ -1,41 +1,37 @@
 # VARDAx
 
-**Because traditional WAFs suck at catching new attacks**
+**A security platform that actually catches the stuff your WAF misses**
 
-So I built this thing after getting tired of signature-based WAFs missing zero-day exploits. VARDAx learns what normal traffic looks like for your app, then freaks out when something weird happens. It's like having a security analyst who never sleeps and actually remembers patterns.
+I got tired of expensive WAFs that couldn't catch new attacks, so I built this. VARDAx learns what normal traffic looks like for your specific app, then flags anything weird. Instead of just saying "BLOCKED BY RULE 42069", it actually tells you why something got flagged.
 
-The dashboard is pretty neat - shows you exactly why something got flagged instead of just "BLOCKED BY RULE 42069".
+The whole thing started after we got hit by a zero-day that sailed right past our $50k/year WAF. By the time we figured out what happened, the damage was done. That's when I decided to build something that could actually adapt and learn.
 
 ---
 
-## Why I built this
-
-Got burned by a zero-day that slipped past our expensive WAF. The attack was completely new, no signatures existed, and by the time we figured out what happened, damage was done.
+## Why this exists
 
 Traditional WAFs are basically playing whack-a-mole with known bad stuff:
 - They only catch attacks they've seen before
 - New attack patterns? Good luck with that
 - False positives everywhere because static rules are dumb
-- No learning, just the same mistakes over and over
+- No learning capability - same mistakes forever
 
-## What VARDAx does differently
-
-Instead of "block if it matches this specific pattern", it's more like "block if this request is acting weird compared to what I usually see".
+VARDAx is different. Instead of "block if it matches this specific pattern", it's more like "block if this request is acting weird compared to what I usually see".
 
 The ML models watch your traffic and learn what's normal. When something deviates significantly, it flags it with an explanation like "this IP just made 340% more requests than usual" or "this request has a weird combination of headers I've never seen together".
 
-**Key stuff:**
+**What makes it useful:**
 - Learns YOUR specific traffic patterns (not generic rules)
 - Catches zero-day attacks by behavioral deviation  
 - Explains WHY something got flagged (no more mystery blocks)
 - Requires human approval before auto-blocking (because AI isn't perfect)
-- Adds like 3ms to request processing (runs async)
+- Adds about 3ms to request processing (runs async)
 
 ---
 
 ## Getting it running
 
-### The lazy way (recommended)
+### The easy way
 
 ```bash
 git clone https://github.com/your-username/vardax.git
@@ -52,7 +48,7 @@ Then go to http://localhost:3000 and you should see the dashboard.
 docker-compose up -d
 ```
 
-### Manual way (if you hate yourself)
+### Manual way (if you enjoy pain)
 
 Backend:
 ```bash
@@ -60,6 +56,11 @@ cd backend
 python -m venv venv
 source venv/bin/activate  # or `venv\Scripts\activate` on Windows
 pip install -r requirements.txt
+
+# Generate a secure JWT secret first
+python ../scripts/generate_jwt_secret.py
+# Copy the output to your .env file
+
 uvicorn app.main:app --reload
 ```
 
@@ -69,6 +70,8 @@ cd frontend
 npm install
 npm run dev
 ```
+
+**Important**: You MUST set a secure JWT secret or the backend won't start. Use the script above to generate one.
 
 ---
 
@@ -87,7 +90,7 @@ Your traffic → NGINX → ModSecurity → Your app
 I use three different ML models because each one is good at catching different types of weirdness:
 
 1. **Isolation Forest** - spots individual weird requests
-2. **Autoencoder** - finds unusual combinations of features
+2. **Autoencoder** - finds unusual combinations of features  
 3. **EWMA Baseline** - catches traffic volume anomalies
 
 They vote on whether something is suspicious, and if enough of them agree, it gets flagged.
@@ -111,7 +114,7 @@ They vote on whether something is suspicious, and if enough of them agree, it ge
 - Approve/reject workflow (because automation without oversight is dangerous)
 - Shows you exactly what each rule would block
 
-**Model health:**
+**System health:**
 - How fast inference is running
 - False positive rates
 - Which models are contributing most to decisions
@@ -120,9 +123,12 @@ They vote on whether something is suspicious, and if enough of them agree, it ge
 
 ## Configuration
 
-Create a `.env` file:
+Create a `.env` file (copy from `.env.example`):
 
 ```bash
+# Generate this with: python scripts/generate_jwt_secret.py
+VARDAX_JWT_SECRET=your-super-secure-secret-here
+
 # Database (SQLite works fine for testing)
 VARDAX_DATABASE_URL=sqlite:///./vardax.db
 
@@ -141,7 +147,7 @@ For production, you'll want PostgreSQL instead of SQLite, and probably a managed
 
 ## Performance notes
 
-I obsessed over latency because nobody wants their WAF slowing things down:
+I obsessed over latency because nobody wants their security tool slowing things down:
 
 - Adds ~3ms to request processing (everything runs async)
 - Handles 12k+ requests/second on decent hardware
@@ -168,7 +174,7 @@ The secret is that feature extraction and ML inference happen completely separat
 
 ---
 
-## Project layout
+## Project structure
 
 ```
 vardax/
@@ -196,9 +202,21 @@ Pull requests welcome if you want to help with any of this.
 
 ---
 
+## Security note
+
+This thing is designed to be paranoid by default. It won't auto-block anything without human approval first. The ML models suggest rules, but a human has to review and approve them before they go live.
+
+That said, make sure you:
+- Set a strong JWT secret (use the generator script)
+- Use HTTPS in production
+- Keep your database credentials secure
+- Review the generated rules before approving them
+
+---
+
 ## License
 
-MIT - do whatever you want with it. If it saves you from getting pwned, buy me a coffee.
+MIT - do whatever you want with it. If it saves you from getting pwned, that's payment enough.
 
 ---
 
@@ -211,6 +229,8 @@ Just please:
 - Write decent commit messages
 - Don't break the existing API without good reason
 
+The codebase is pretty straightforward - backend handles ML stuff, frontend shows pretty graphs. Most of the magic happens in `backend/app/ml/`.
+
 ---
 
-*Built because I got tired of expensive WAFs that couldn't catch new attacks. Hope it helps you too.*
+*Built because expensive WAFs couldn't catch new attacks. Hopefully it helps you too.*
