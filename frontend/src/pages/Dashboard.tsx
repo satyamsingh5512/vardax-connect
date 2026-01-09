@@ -6,7 +6,6 @@ import {
   AlertTriangle, 
   Globe, 
   Zap,
-  Eye,
   Server
 } from 'lucide-react';
 
@@ -18,8 +17,12 @@ import RecentThreats from '../components/dashboard/RecentThreats';
 import SystemHealth from '../components/dashboard/SystemHealth';
 import QuickActions from '../components/dashboard/QuickActions';
 
+// Services
+import { apiService } from '../services/api';
+import type { LiveStats, TrafficMetrics } from '../services/api';
+
 // Store
-// import { useStore } from '../store';
+import { useStore } from '../store';
 
 // Types
 interface DashboardMetric {
@@ -34,65 +37,137 @@ interface DashboardMetric {
 }
 
 const Dashboard: React.FC = () => {
-  // const { connectionStatus } = useStore();
+  const { setConnectionStatus, setLoading, setError } = useStore();
   const [timeRange, setTimeRange] = useState<'1h' | '24h' | '7d' | '30d'>('24h');
+  const [metrics, setMetrics] = useState<DashboardMetric[]>([]);
+  const [liveStats, setLiveStats] = useState<LiveStats | null>(null);
+  const [trafficMetrics, setTrafficMetrics] = useState<TrafficMetrics | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Mock real-time metrics (in production, these would come from your store/API)
-  const [metrics, setMetrics] = useState<DashboardMetric[]>([
-    {
-      id: 'threats-blocked',
-      title: 'Threats Blocked',
-      value: 1247,
-      change: 12.5,
-      changeType: 'increase',
-      icon: Shield,
-      color: 'success',
-      description: 'Total threats blocked in the last 24h'
-    },
-    {
-      id: 'requests-analyzed',
-      title: 'Requests Analyzed',
-      value: '2.4M',
-      change: 8.2,
-      changeType: 'increase',
-      icon: Activity,
-      color: 'primary',
-      description: 'HTTP requests processed and analyzed'
-    },
-    {
-      id: 'active-threats',
-      title: 'Active Threats',
-      value: 23,
-      change: -15.3,
-      changeType: 'decrease',
-      icon: AlertTriangle,
-      color: 'warning',
-      description: 'Currently active threat indicators'
-    },
-    {
-      id: 'response-time',
-      title: 'Avg Response Time',
-      value: '3.2ms',
-      change: -5.1,
-      changeType: 'decrease',
-      icon: Zap,
-      color: 'success',
-      description: 'Average ML inference response time'
+  // Fetch real data from API
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      setConnectionStatus('connecting');
+
+      // Fetch live stats and traffic metrics in parallel
+      const [liveStatsData, trafficData] = await Promise.all([
+        apiService.getLiveStats(),
+        apiService.getTrafficMetrics()
+      ]);
+
+      setLiveStats(liveStatsData);
+      setTrafficMetrics(trafficData);
+
+      // Convert API data to dashboard metrics
+      const dashboardMetrics: DashboardMetric[] = [
+        {
+          id: 'threats-blocked',
+          title: 'Threats Blocked',
+          value: liveStatsData.threats_blocked,
+          change: 0, // No historical data for change calculation yet
+          changeType: 'neutral',
+          icon: Shield,
+          color: 'success',
+          description: 'Total threats blocked in the last 24h'
+        },
+        {
+          id: 'requests-analyzed',
+          title: 'Requests/Second',
+          value: Math.round(liveStatsData.requests_per_second),
+          change: 0,
+          changeType: 'neutral',
+          icon: Activity,
+          color: 'primary',
+          description: 'Current requests per second'
+        },
+        {
+          id: 'active-threats',
+          title: 'Active Threats',
+          value: liveStatsData.anomalies_last_minute,
+          change: 0,
+          changeType: 'neutral',
+          icon: AlertTriangle,
+          color: 'warning',
+          description: 'Anomalies detected in the last minute'
+        },
+        {
+          id: 'response-time',
+          title: 'ML Inference Time',
+          value: `${liveStatsData.inference_latency_ms.toFixed(1)}ms`,
+          change: 0,
+          changeType: 'neutral',
+          icon: Zap,
+          color: 'success',
+          description: 'Average ML inference response time'
+        }
+      ];
+
+      setMetrics(dashboardMetrics);
+      setConnectionStatus('connected');
+      setError(null);
+    } catch (error) {
+      console.error('Failed to fetch dashboard data:', error);
+      setConnectionStatus('disconnected');
+      setError('Failed to connect to VARDAx backend');
+      
+      // Set empty metrics on error
+      setMetrics([
+        {
+          id: 'threats-blocked',
+          title: 'Threats Blocked',
+          value: 0,
+          change: 0,
+          changeType: 'neutral',
+          icon: Shield,
+          color: 'error',
+          description: 'No data available'
+        },
+        {
+          id: 'requests-analyzed',
+          title: 'Requests/Second',
+          value: 0,
+          change: 0,
+          changeType: 'neutral',
+          icon: Activity,
+          color: 'error',
+          description: 'No data available'
+        },
+        {
+          id: 'active-threats',
+          title: 'Active Threats',
+          value: 0,
+          change: 0,
+          changeType: 'neutral',
+          icon: AlertTriangle,
+          color: 'error',
+          description: 'No data available'
+        },
+        {
+          id: 'response-time',
+          title: 'ML Inference Time',
+          value: 'N/A',
+          change: 0,
+          changeType: 'neutral',
+          icon: Zap,
+          color: 'error',
+          description: 'No data available'
+        }
+      ]);
+    } finally {
+      setLoading(false);
+      setIsLoading(false);
     }
-  ]);
+  };
 
-  // Update metrics periodically (simulate real-time updates)
+  // Initial data fetch
   useEffect(() => {
-    const interval = setInterval(() => {
-      setMetrics(prev => prev.map(metric => ({
-        ...metric,
-        value: typeof metric.value === 'number' 
-          ? metric.value + Math.floor(Math.random() * 10) - 5
-          : metric.value,
-        change: metric.change + (Math.random() - 0.5) * 2
-      })));
-    }, 5000);
+    fetchDashboardData();
+  }, []);
 
+  // Auto-refresh every 10 seconds
+  useEffect(() => {
+    const interval = setInterval(fetchDashboardData, 10000);
     return () => clearInterval(interval);
   }, []);
 
@@ -110,6 +185,17 @@ const Dashboard: React.FC = () => {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0 }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-full bg-gradient-to-br from-enterprise-bg via-enterprise-surface/30 to-enterprise-bg p-6 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-brand-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-enterprise-text-muted">Loading dashboard data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-full bg-gradient-to-br from-enterprise-bg via-enterprise-surface/30 to-enterprise-bg p-6">
@@ -198,122 +284,94 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Additional Stats Row */}
-        <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Geographic Distribution */}
-          <div className="bg-enterprise-card/50 backdrop-blur-sm border border-enterprise-border-light rounded-xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-enterprise-text">Geographic Distribution</h3>
-              <Globe className="w-5 h-5 text-enterprise-text-muted" />
-            </div>
-            <div className="space-y-3">
-              {[
-                { country: 'United States', percentage: 45, threats: 156 },
-                { country: 'China', percentage: 23, threats: 89 },
-                { country: 'Russia', percentage: 18, threats: 67 },
-                { country: 'Brazil', percentage: 14, threats: 45 }
-              ].map((item, index) => (
-                <div key={item.country} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-3 h-3 rounded-full bg-gradient-to-r from-brand-primary to-brand-secondary" />
-                    <span className="text-sm text-enterprise-text">{item.country}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm text-enterprise-text-muted">{item.threats}</span>
-                    <div className="w-16 h-2 bg-enterprise-hover rounded-full overflow-hidden">
-                      <motion.div
-                        className="h-full bg-gradient-to-r from-brand-primary to-brand-secondary"
-                        initial={{ width: 0 }}
-                        animate={{ width: `${item.percentage}%` }}
-                        transition={{ duration: 1, delay: index * 0.2 }}
-                      />
+        {/* Real-time Stats Row */}
+        {liveStats && (
+          <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Severity Distribution */}
+            <div className="bg-enterprise-card/50 backdrop-blur-sm border border-enterprise-border-light rounded-xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-enterprise-text">Severity Distribution</h3>
+                <AlertTriangle className="w-5 h-5 text-enterprise-text-muted" />
+              </div>
+              <div className="space-y-3">
+                {Object.entries(liveStats.severity_breakdown).map(([severity, count]) => (
+                  <div key={severity} className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-3 h-3 rounded-full ${
+                        severity === 'critical' ? 'bg-severity-critical' :
+                        severity === 'high' ? 'bg-severity-high' :
+                        severity === 'medium' ? 'bg-severity-medium' :
+                        'bg-severity-low'
+                      }`} />
+                      <span className="text-sm text-enterprise-text capitalize">{severity}</span>
                     </div>
+                    <span className="text-sm font-medium text-enterprise-text-secondary">{count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Model Status */}
+            <div className="bg-enterprise-card/50 backdrop-blur-sm border border-enterprise-border-light rounded-xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-enterprise-text">ML Model Status</h3>
+                <Server className="w-5 h-5 text-enterprise-text-muted" />
+              </div>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-enterprise-text-muted">Status</span>
+                  <span className={`text-sm font-medium ${
+                    liveStats.model_status === 'healthy' ? 'text-status-success' : 'text-status-error'
+                  }`}>
+                    {liveStats.model_status}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-enterprise-text-muted">Inference Time</span>
+                  <span className="text-sm font-medium text-enterprise-text">
+                    {liveStats.inference_latency_ms.toFixed(1)}ms
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-enterprise-text-muted">Pending Rules</span>
+                  <span className="text-sm font-medium text-enterprise-text">
+                    {liveStats.pending_rules}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Traffic Summary */}
+            {trafficMetrics && (
+              <div className="bg-enterprise-card/50 backdrop-blur-sm border border-enterprise-border-light rounded-xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-enterprise-text">Traffic Summary</h3>
+                  <Globe className="w-5 h-5 text-enterprise-text-muted" />
+                </div>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-enterprise-text-muted">Unique IPs</span>
+                    <span className="text-sm font-medium text-enterprise-text">
+                      {trafficMetrics.unique_ips.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-enterprise-text-muted">Error Rate</span>
+                    <span className="text-sm font-medium text-enterprise-text">
+                      {(trafficMetrics.error_rate * 100).toFixed(2)}%
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-enterprise-text-muted">Avg Response</span>
+                    <span className="text-sm font-medium text-enterprise-text">
+                      {trafficMetrics.avg_response_time_ms.toFixed(1)}ms
+                    </span>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Top Attack Types */}
-          <div className="bg-enterprise-card/50 backdrop-blur-sm border border-enterprise-border-light rounded-xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-enterprise-text">Top Attack Types</h3>
-              <Eye className="w-5 h-5 text-enterprise-text-muted" />
-            </div>
-            <div className="space-y-3">
-              {[
-                { type: 'SQL Injection', count: 234, severity: 'critical' },
-                { type: 'XSS', count: 189, severity: 'high' },
-                { type: 'CSRF', count: 156, severity: 'medium' },
-                { type: 'Path Traversal', count: 98, severity: 'high' }
-              ].map((attack) => (
-                <div key={attack.type} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-3 h-3 rounded-full ${
-                      attack.severity === 'critical' ? 'bg-severity-critical' :
-                      attack.severity === 'high' ? 'bg-severity-high' :
-                      'bg-severity-medium'
-                    }`} />
-                    <span className="text-sm text-enterprise-text">{attack.type}</span>
-                  </div>
-                  <span className="text-sm font-medium text-enterprise-text-secondary">{attack.count}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Performance Metrics */}
-          <div className="bg-enterprise-card/50 backdrop-blur-sm border border-enterprise-border-light rounded-xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-enterprise-text">Performance</h3>
-              <Server className="w-5 h-5 text-enterprise-text-muted" />
-            </div>
-            <div className="space-y-4">
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-enterprise-text-muted">CPU Usage</span>
-                  <span className="text-enterprise-text">23%</span>
-                </div>
-                <div className="w-full h-2 bg-enterprise-hover rounded-full overflow-hidden">
-                  <motion.div
-                    className="h-full bg-status-success"
-                    initial={{ width: 0 }}
-                    animate={{ width: '23%' }}
-                    transition={{ duration: 1 }}
-                  />
-                </div>
               </div>
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-enterprise-text-muted">Memory</span>
-                  <span className="text-enterprise-text">67%</span>
-                </div>
-                <div className="w-full h-2 bg-enterprise-hover rounded-full overflow-hidden">
-                  <motion.div
-                    className="h-full bg-status-warning"
-                    initial={{ width: 0 }}
-                    animate={{ width: '67%' }}
-                    transition={{ duration: 1, delay: 0.2 }}
-                  />
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-enterprise-text-muted">Network I/O</span>
-                  <span className="text-enterprise-text">45%</span>
-                </div>
-                <div className="w-full h-2 bg-enterprise-hover rounded-full overflow-hidden">
-                  <motion.div
-                    className="h-full bg-brand-primary"
-                    initial={{ width: 0 }}
-                    animate={{ width: '45%' }}
-                    transition={{ duration: 1, delay: 0.4 }}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </motion.div>
+            )}
+          </motion.div>
+        )}
       </motion.div>
     </div>
   );
