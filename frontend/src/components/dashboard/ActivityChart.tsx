@@ -1,34 +1,62 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import { Activity, TrendingUp } from 'lucide-react';
+import { apiService } from '../../services/api';
 
 interface ActivityChartProps {
   timeRange: '1h' | '24h' | '7d' | '30d';
 }
 
-// Mock data - in production this would come from your API
-const generateMockData = (timeRange: string) => {
-  const dataPoints = timeRange === '1h' ? 60 : timeRange === '24h' ? 24 : timeRange === '7d' ? 7 : 30;
-  const data = [];
-  
-  for (let i = 0; i < dataPoints; i++) {
-    data.push({
-      time: timeRange === '1h' ? `${i}m` : 
-            timeRange === '24h' ? `${i}:00` :
-            timeRange === '7d' ? `Day ${i + 1}` :
-            `Week ${i + 1}`,
-      requests: Math.floor(Math.random() * 1000) + 500,
-      threats: Math.floor(Math.random() * 50) + 10,
-      blocked: Math.floor(Math.random() * 30) + 5,
-    });
-  }
-  
-  return data;
-};
+interface ChartDataPoint {
+  time: string;
+  requests: number;
+  threats: number;
+  blocked: number;
+}
 
 const ActivityChart: React.FC<ActivityChartProps> = ({ timeRange }) => {
-  const data = generateMockData(timeRange);
+  const [data, setData] = useState<ChartDataPoint[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch real traffic data from API
+  const fetchChartData = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // For now, we'll use the current metrics as a single data point
+      // In a full implementation, you'd have a time-series endpoint
+      const trafficMetrics = await apiService.getTrafficMetrics();
+      const liveStats = await apiService.getLiveStats();
+
+      // Create a single data point with current values
+      // In production, you'd fetch historical time-series data
+      const currentDataPoint: ChartDataPoint = {
+        time: new Date().toLocaleTimeString(),
+        requests: Math.round(trafficMetrics.requests_per_second * 60), // Convert to requests per minute
+        threats: liveStats.anomalies_last_minute,
+        blocked: liveStats.threats_blocked
+      };
+
+      setData([currentDataPoint]);
+    } catch (err) {
+      console.error('Failed to fetch chart data:', err);
+      setError('Failed to load chart data');
+      setData([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchChartData();
+    
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchChartData, 30000);
+    return () => clearInterval(interval);
+  }, [timeRange]);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -51,6 +79,37 @@ const ActivityChart: React.FC<ActivityChartProps> = ({ timeRange }) => {
     return null;
   };
 
+  if (isLoading) {
+    return (
+      <div className="bg-enterprise-card/50 backdrop-blur-sm border border-enterprise-border-light rounded-xl p-6">
+        <div className="flex items-center justify-center h-80">
+          <div className="text-center">
+            <div className="w-6 h-6 border-2 border-brand-primary border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+            <p className="text-sm text-enterprise-text-muted">Loading chart data...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-enterprise-card/50 backdrop-blur-sm border border-enterprise-border-light rounded-xl p-6">
+        <div className="flex items-center justify-center h-80">
+          <div className="text-center">
+            <p className="text-sm text-status-error mb-2">{error}</p>
+            <button 
+              onClick={fetchChartData}
+              className="text-xs text-brand-primary hover:text-brand-primary-hover"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -69,76 +128,84 @@ const ActivityChart: React.FC<ActivityChartProps> = ({ timeRange }) => {
           </div>
         </div>
         
-        <div className="flex items-center space-x-2 text-sm text-status-success">
-          <TrendingUp className="w-4 h-4" />
-          <span>+12.5% from last period</span>
-        </div>
+        {data.length > 0 && (
+          <div className="flex items-center space-x-2 text-sm text-status-success">
+            <TrendingUp className="w-4 h-4" />
+            <span>Live Data</span>
+          </div>
+        )}
       </div>
 
       {/* Chart */}
       <div className="h-80">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-            <defs>
-              <linearGradient id="requestsGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#0066ff" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#0066ff" stopOpacity={0}/>
-              </linearGradient>
-              <linearGradient id="threatsGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#e84393" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#e84393" stopOpacity={0}/>
-              </linearGradient>
-              <linearGradient id="blockedGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#00b894" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#00b894" stopOpacity={0}/>
-              </linearGradient>
-            </defs>
-            <CartesianGrid 
-              strokeDasharray="3 3" 
-              stroke="#2d323c" 
-              opacity={0.3}
-            />
-            <XAxis 
-              dataKey="time" 
-              stroke="#8892a6"
-              fontSize={12}
-              tickLine={false}
-              axisLine={false}
-            />
-            <YAxis 
-              stroke="#8892a6"
-              fontSize={12}
-              tickLine={false}
-              axisLine={false}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            
-            <Area
-              type="monotone"
-              dataKey="requests"
-              stroke="#0066ff"
-              strokeWidth={2}
-              fill="url(#requestsGradient)"
-              name="Requests"
-            />
-            <Area
-              type="monotone"
-              dataKey="threats"
-              stroke="#e84393"
-              strokeWidth={2}
-              fill="url(#threatsGradient)"
-              name="Threats"
-            />
-            <Area
-              type="monotone"
-              dataKey="blocked"
-              stroke="#00b894"
-              strokeWidth={2}
-              fill="url(#blockedGradient)"
-              name="Blocked"
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+        {data.length === 0 ? (
+          <div className="flex items-center justify-center h-full">
+            <p className="text-enterprise-text-muted">No traffic data available</p>
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+              <defs>
+                <linearGradient id="requestsGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#0066ff" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#0066ff" stopOpacity={0}/>
+                </linearGradient>
+                <linearGradient id="threatsGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#e84393" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#e84393" stopOpacity={0}/>
+                </linearGradient>
+                <linearGradient id="blockedGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#00b894" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#00b894" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid 
+                strokeDasharray="3 3" 
+                stroke="#2d323c" 
+                opacity={0.3}
+              />
+              <XAxis 
+                dataKey="time" 
+                stroke="#8892a6"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis 
+                stroke="#8892a6"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              
+              <Area
+                type="monotone"
+                dataKey="requests"
+                stroke="#0066ff"
+                strokeWidth={2}
+                fill="url(#requestsGradient)"
+                name="Requests"
+              />
+              <Area
+                type="monotone"
+                dataKey="threats"
+                stroke="#e84393"
+                strokeWidth={2}
+                fill="url(#threatsGradient)"
+                name="Threats"
+              />
+              <Area
+                type="monotone"
+                dataKey="blocked"
+                stroke="#00b894"
+                strokeWidth={2}
+                fill="url(#blockedGradient)"
+                name="Blocked"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        )}
       </div>
 
       {/* Legend */}
