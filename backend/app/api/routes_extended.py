@@ -204,12 +204,12 @@ async def get_live_stats() -> Dict[str, Any]:
     
     return {
         "timestamp": now.isoformat(),
-        "requests_per_second": 150 + (now.second % 50),  # Simulated
+        "requests_per_second": 0,  # No real traffic data yet
         "anomalies_last_minute": anomalies_minute,
         "anomalies_last_hour": anomalies_hour,
         "threats_blocked": severity_counts["high"] + severity_counts["critical"],
         "pending_rules": len([r for r in pending_rules.values() if r.status.value == "pending"]),
         "severity_breakdown": severity_counts,
-        "model_status": "healthy",
-        "inference_latency_ms": 18.2,
+        "model_status": "healthy" if len(recent_anomalies) >= 0 else "warning",
+        "inference_latency_ms": 0.0,  # No real inference data yet
     }
