@@ -81,7 +81,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
   return (
     <motion.div
       className={clsx(
-        'h-full bg-enterprise-surface/80 backdrop-blur-xl border-r border-enterprise-border',
+        'h-full bg-enterprise-surface/80 backdrop-blur-xl border-r border-enterprise-border-light',
         'flex flex-col relative transition-all duration-300 ease-in-out',
         collapsed ? 'w-16' : 'w-64'
       )}
@@ -90,7 +90,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
       transition={{ duration: 0.3, ease: 'easeInOut' }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-enterprise-border/50">
+      <div className="flex items-center justify-between p-4 border-b border-enterprise-border-light/50">
         <AnimatePresence mode="wait">
           {!collapsed && (
             <motion.div
@@ -228,7 +228,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
       </nav>
 
       {/* Status Indicator */}
-      <div className="p-4 border-t border-enterprise-border/50">
+      <div className="p-4 border-t border-enterprise-border-light/50">
         <AnimatePresence mode="wait">
           {!collapsed ? (
             <motion.div
