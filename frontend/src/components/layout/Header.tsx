@@ -127,7 +127,7 @@ const Header: React.FC<HeaderProps> = ({
     <motion.header
       initial={{ y: -50, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      className="h-16 bg-enterprise-surface/90 backdrop-blur-xl border-b border-enterprise-border flex items-center justify-between px-6 relative z-40"
+      className="h-16 bg-enterprise-surface/90 backdrop-blur-xl border-b border-enterprise-border-light flex items-center justify-between px-6 relative z-40"
     >
       {/* Left Section */}
       <div className="flex items-center space-x-4">
