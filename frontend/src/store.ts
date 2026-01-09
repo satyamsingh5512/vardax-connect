@@ -118,29 +118,29 @@ interface AppState {
 
 export const useStore = create<AppState>((set) => ({
   // Initial state
-  isConnected: true,
-  connectionStatus: 'connected',
-  lastUpdate: new Date(),
+  isConnected: false,
+  connectionStatus: 'disconnected',
+  lastUpdate: null,
   wsConnected: false,
   
   stats: {
-    requestsPerSecond: 1247.5,
-    anomalyRate: 2.3,
-    totalRequests: 2400000,
-    threatsBlocked: 1247,
-    activeThreats: 23,
-    avgResponseTime: 3.2
+    requestsPerSecond: 0,
+    anomalyRate: 0,
+    totalRequests: 0,
+    threatsBlocked: 0,
+    activeThreats: 0,
+    avgResponseTime: 0
   },
   
   systemHealth: {
-    cpu: 23,
-    memory: 67,
-    network: 45,
+    cpu: 0,
+    memory: 0,
+    network: 0,
     services: {
       mlEngine: 'healthy',
       wafGateway: 'healthy',
       analytics: 'healthy',
-      database: 'warning'
+      database: 'healthy'
     }
   },
   
