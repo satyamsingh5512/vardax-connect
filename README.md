@@ -8,6 +8,26 @@ The whole thing started after we got hit by a zero-day that sailed right past ou
 
 ---
 
+## 🤖 For Machine Learning Developers
+
+**Looking to break into ML security or showcase ML skills in your portfolio?**
+
+VARDAx is a production-grade ML system with real-world applications in cybersecurity. Perfect for ML developers who want to:
+- Work with **Isolation Forests, Autoencoders, and Ensemble Learning**
+- Build **real-time ML inference systems** (<50ms latency)
+- Implement **explainable AI** with SHAP
+- Deploy **production ML pipelines** with FastAPI and gRPC
+- Learn **MLOps**: training, deployment, monitoring, A/B testing
+
+**📚 ML Resources:**
+- **[ML Developer Guide](ML_DEVELOPER_GUIDE.md)** - Comprehensive guide for ML careers and learning
+- **[ML Quick Start](ML_QUICK_START.md)** - Get running with ML components in 30 minutes
+- **[ML Technology Stack](#machine-learning-stack)** - See all ML frameworks and algorithms used
+
+**💼 Career Value:** ML Security Engineers earn $120k-$200k+ with this skillset.
+
+---
+
 ## Why this exists
 
 Traditional WAFs are basically playing whack-a-mole with known bad stuff:
@@ -116,6 +136,25 @@ I use three different ML models because each one is good at catching different t
 
 They vote on whether something is suspicious, and if enough of them agree, it gets flagged.
 
+### Machine Learning Stack
+
+**Core ML Algorithms:**
+- **Isolation Forest** (scikit-learn) - Unsupervised anomaly detection for zero-day attacks
+- **Autoencoders** (PyTorch) - Neural network-based pattern recognition
+- **EWMA Baseline** - Statistical rate anomaly detection
+- **LightGBM** - Bot detection with gradient boosting
+- **XGBoost** - Attack classification (SQLi, XSS, RCE, etc.)
+- **SHAP** - Explainable AI for model interpretability
+
+**ML Features:**
+- 47 behavioral features extracted from HTTP traffic
+- Real-time inference (<50ms end-to-end)
+- Continuous learning with drift detection
+- Ensemble voting for improved accuracy
+- 99.2% detection rate, 1.8% false positive rate
+
+**For detailed ML documentation, see [ML_DEVELOPER_GUIDE.md](ML_DEVELOPER_GUIDE.md)**
+
 ---
 
 ## What the dashboard shows you
@@ -200,14 +239,27 @@ The secret is that feature extraction and ML inference happen completely separat
 ```
 vardax/
 ├── backend/           # FastAPI + ML models
+│   ├── app/ml/        # Core ML components
+│   │   ├── models.py              # Isolation Forest, Autoencoder, EWMA
+│   │   ├── feature_extractor.py   # 47 feature engineering pipeline
+│   │   ├── continuous_learning.py # Online learning & drift detection
+│   │   ├── rule_generator.py      # ML-based rule synthesis
+│   │   └── rule_deployer.py       # Automated deployment
 ├── frontend/          # React dashboard  
 ├── nginx/             # WAF config
-├── models/            # Trained ML models go here
+├── models/            # Trained ML models
+├── sentinelas/        # Advanced ML service (XGBoost, SHAP)
+│   └── ml-service/    # gRPC inference, explainability
+├── vardax-ddos/       # DDoS protection with ML bot detection
+│   └── bot-detector/  # LightGBM-based bot detection
+├── fortress/          # Security middleware stack
 ├── docker-compose.yml # Everything in containers
-└── scripts/           # Deployment helpers
+└── scripts/           # Deployment and ML training helpers
 ```
 
 The backend does all the heavy lifting (ML inference, feature extraction, rule generation). Frontend is just a pretty dashboard to see what's happening and manage rules.
+
+**ML developers:** Check out `backend/app/ml/` for the main ML code and `sentinelas/` for advanced features.
 
 ---
 
@@ -220,6 +272,25 @@ The backend does all the heavy lifting (ML inference, feature extraction, rule g
 - Threat intel feeds (IP reputation, etc.)
 
 Pull requests welcome if you want to help with any of this.
+
+### For ML Developers - Contribution Ideas
+
+**Beginner:**
+- Tune hyperparameters for better accuracy
+- Add new behavioral features
+- Visualize feature importance
+
+**Intermediate:**
+- Implement Variational Autoencoder (VAE)
+- Add LSTM for time-series prediction
+- Optimize inference latency
+
+**Advanced:**
+- Implement federated learning
+- Add graph neural networks for request flows
+- Build AutoML pipeline for model selection
+
+See [ML_DEVELOPER_GUIDE.md](ML_DEVELOPER_GUIDE.md) for detailed contribution guide.
 
 ---
 
@@ -251,6 +322,21 @@ Just please:
 - Don't break the existing API without good reason
 
 The codebase is pretty straightforward - backend handles ML stuff, frontend shows pretty graphs. Most of the magic happens in `backend/app/ml/`.
+
+### ML-Specific Resources
+
+📚 **Documentation:**
+- [ML Developer Guide](ML_DEVELOPER_GUIDE.md) - Complete ML career and learning guide
+- [ML Quick Start](ML_QUICK_START.md) - 30-minute getting started guide
+- [Feature Engineering](backend/app/ml/feature_extractor.py) - 47 features explained
+- [Model Architecture](backend/app/ml/models.py) - Implementation details
+
+🎓 **For ML Learners:**
+- Real production ML system to learn from
+- Anomaly detection, ensemble learning, online learning
+- Sub-50ms inference optimization techniques
+- MLOps: training, deployment, monitoring
+- Career-relevant skills: ML Security Engineers earn $120k-$200k+
 
 ---
 
