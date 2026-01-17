@@ -120,7 +120,6 @@ python ../../scripts/train_models.py
 
 ```python
 # Extract features from HTTP request
-# Note: Import paths shown are examples - verify actual structure after installation
 from backend.app.ml.feature_extractor import FeatureExtractor
 
 extractor = FeatureExtractor()

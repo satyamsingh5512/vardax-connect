@@ -719,9 +719,9 @@ This project provides a **complete, production-grade ML system** that demonstrat
 ## 📫 Contact & Questions
 
 For ML-specific questions:
-- **GitHub Issues**: Tag with `ml` or `machine-learning`
-- **Email**: [Project maintainer email]
-- **LinkedIn**: Share your ML work and connect with community
+- **GitHub Issues**: Tag with `ml` or `machine-learning` label
+- **GitHub Discussions**: Start a discussion for general questions
+- **LinkedIn**: Share your ML work and connect with the community
 
 ---
 
