@@ -120,6 +120,7 @@ python ../../scripts/train_models.py
 
 ```python
 # Extract features from HTTP request
+# Note: Import paths shown are examples - verify actual structure after installation
 from backend.app.ml.feature_extractor import FeatureExtractor
 
 extractor = FeatureExtractor()
@@ -534,7 +535,7 @@ After completing this quick start:
 
 1. **Read the full ML Developer Guide**: `ML_DEVELOPER_GUIDE.md`
 2. **Explore advanced components**: Sentinelas ML service, Bot detector
-3. **Contribute improvements**: See `CONTRIBUTING.md`
+3. **Contribute improvements**: Open an issue or PR with your ideas
 4. **Build portfolio projects**: Use VARDAx as base for your projects
 5. **Share your learnings**: Write blog posts, give talks
 
@@ -557,8 +558,9 @@ After completing this quick start:
 
 **Ready to dive deeper?** Check out `ML_DEVELOPER_GUIDE.md` for comprehensive ML training and career guidance.
 
-**Questions?** Open an issue with the `ml-help` label!
+**Questions?** Open an issue with the `question` or `ml` label!
 
 ---
 
-*Last Updated: January 2026*
+*Documentation Version: 1.0*
+*Last Updated: January 17, 2026*

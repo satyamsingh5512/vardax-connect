@@ -328,8 +328,8 @@ The codebase is pretty straightforward - backend handles ML stuff, frontend show
 📚 **Documentation:**
 - [ML Developer Guide](ML_DEVELOPER_GUIDE.md) - Complete ML career and learning guide
 - [ML Quick Start](ML_QUICK_START.md) - 30-minute getting started guide
-- [Feature Engineering](backend/app/ml/feature_extractor.py) - 47 features explained
-- [Model Architecture](backend/app/ml/models.py) - Implementation details
+- [Core ML Models](#machine-learning-stack) - See ML technology stack section above
+- [Feature Engineering Details](ML_DEVELOPER_GUIDE.md#3-feature-engineering-pipeline) - 47 features explained in ML guide
 
 🎓 **For ML Learners:**
 - Real production ML system to learn from

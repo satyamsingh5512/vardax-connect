@@ -484,7 +484,10 @@ sentinelas/ml-service/
 
 ## 💰 Market Value & Job Prospects
 
-### Salary Ranges (US Market, 2026)
+### Salary Ranges (2026 - US Market)
+
+**Note:** These ranges are for major tech hubs (Silicon Valley, NYC, Seattle). Salaries vary significantly based on location, company size, cost of living, and individual experience. International markets and smaller cities typically offer 20-50% lower ranges.
+
 ```
 Junior ML Engineer (Security):        $90,000 - $130,000
 Mid-level ML Engineer (Security):     $120,000 - $170,000
@@ -493,6 +496,12 @@ ML Architect/Lead (Security):         $180,000 - $300,000+
 
 Freelance/Consulting:                 $100 - $250/hour
 ```
+
+**Other Markets (Approximate):**
+- Europe: €70k-€180k (varies greatly by country)
+- Asia-Pacific: $60k-$200k (Singapore, Australia higher)
+- Remote/Global: Often 70-90% of US rates
+- Startups: May offer lower base but equity compensation
 
 ### High-Demand Skills from This Project
 1. **Real-Time ML Inference** - Critical for production systems
@@ -718,5 +727,8 @@ For ML-specific questions:
 
 **Built with ❤️ by ML engineers, for ML engineers**
 
-*Last Updated: January 2026*
-*Next Review: February 2026*
+---
+
+*Documentation Version: 1.0*
+*Last Updated: January 17, 2026*
+*Next Review: Quarterly updates*
