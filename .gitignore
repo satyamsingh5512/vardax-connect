@@ -49,3 +49,8 @@ secrets/
 .vardax-*.pid
 ngrok*.tgz
 ngrok.log
+
+# SQLite runtime databases (auto-created by backend)
+*.db
+*.sqlite
+*.sqlite3
